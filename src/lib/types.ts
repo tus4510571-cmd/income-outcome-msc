@@ -40,6 +40,8 @@ export interface ExpenseDetail {
   id: string;
   transaction_id: string;
   shop_name: string | null;
+  shop_address: string | null;
+  shop_tax_id: string | null;
   employee_name: string | null;
 }
 

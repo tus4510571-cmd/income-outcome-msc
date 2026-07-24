@@ -41,6 +41,8 @@ export async function createTransaction(formData: {
   currency: string;
   transaction_date: string;
   shop_name?: string;
+  shop_address?: string;
+  shop_tax_id?: string;
   employee_name?: string;
   customer_name?: string;
   source?: string;
@@ -72,6 +74,8 @@ export async function createTransaction(formData: {
     await supabase.from("expense_details").insert({
       transaction_id: transaction.id,
       shop_name: formData.shop_name || null,
+      shop_address: formData.shop_address || null,
+      shop_tax_id: formData.shop_tax_id || null,
       employee_name: formData.employee_name || null,
     });
   } else {
@@ -272,6 +276,8 @@ export async function updateTransaction(
     transaction_date: string;
     description: string;
     shop_name?: string;
+    shop_address?: string;
+    shop_tax_id?: string;
     employee_name?: string;
     customer_name?: string;
     source?: string;
@@ -305,6 +311,8 @@ export async function updateTransaction(
       .from("expense_details")
       .update({
         shop_name: formData.shop_name || null,
+        shop_address: formData.shop_address || null,
+        shop_tax_id: formData.shop_tax_id || null,
         employee_name: formData.employee_name || null,
       })
       .eq("transaction_id", id);

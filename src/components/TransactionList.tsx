@@ -11,14 +11,20 @@ interface TransactionListProps {
 }
 
 export default function TransactionList({ transactions, baseHref, showFiles = false }: TransactionListProps) {
-  const getRequiredCount = (category: string) => {
-    // We import REQUIRED_FILES from types
+  const getRequiredCount = (t: TransactionWithDetails) => {
+    if (t.category === "shop_without_receipt") {
+      const hasCard = t.files?.some(f => f.file_type === "business_card");
+      const hasReceipt = t.files?.some(f => f.file_type === "receipt");
+      const hasSlip = t.files?.some(f => f.file_type === "transfer_slip");
+      
+      if (hasCard && hasReceipt && !hasSlip) return 2; // Cash payment
+      return 3; // Bank transfer
+    }
     const REQUIRED_FILES: Record<string, string[]> = {
       shop_with_receipt: ["transfer_slip", "receipt"],
-      shop_without_receipt: ["transfer_slip", "receipt"],
       employee_labor: ["transfer_slip", "id_card_copy", "employee_receipt"],
     };
-    return REQUIRED_FILES[category]?.length || 0;
+    return REQUIRED_FILES[t.category]?.length || 0;
   };
   if (!transactions || transactions.length === 0) {
     return (
@@ -101,19 +107,26 @@ export default function TransactionList({ transactions, baseHref, showFiles = fa
                   <td className="py-4 px-6 text-right whitespace-nowrap">
                     {showFiles ? (
                       <div className="flex items-center justify-end gap-2">
-                        <div className="flex gap-1">
-                          {Array.from({ length: getRequiredCount(t.category) }).map((_, i) => (
-                            <span
-                              key={i}
-                              className={`w-2.5 h-2.5 rounded-full ${
-                                i < (t.files?.length || 0) ? (isIncome ? "bg-emerald-400" : "bg-emerald-400") : "bg-red-300"
-                              }`}
-                            />
-                          ))}
+                        <div className="flex flex-col items-end gap-1">
+                          <div className="flex items-center gap-2">
+                            <div className="flex gap-1">
+                              {Array.from({ length: getRequiredCount(t) }).map((_, i) => (
+                                <span
+                                  key={i}
+                                  className={`w-2.5 h-2.5 rounded-full ${
+                                    i < (t.files?.length || 0) ? (isIncome ? "bg-emerald-400" : "bg-emerald-400") : "bg-red-300"
+                                  }`}
+                                />
+                              ))}
+                            </div>
+                            <span className="text-xs text-slate-400 w-8 text-right">
+                              {t.files?.length || 0}/{getRequiredCount(t)}
+                            </span>
+                          </div>
+                          {t.category === "shop_without_receipt" && getRequiredCount(t) === 2 && (t.files?.length === 2) && (
+                            <span className="text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded whitespace-nowrap">จ่ายเงินสด</span>
+                          )}
                         </div>
-                        <span className="text-xs text-slate-400 w-12 text-right">
-                          {t.files?.length || 0}/{getRequiredCount(t.category)}
-                        </span>
                       </div>
                     ) : (
                       <span className="text-sm text-slate-500">

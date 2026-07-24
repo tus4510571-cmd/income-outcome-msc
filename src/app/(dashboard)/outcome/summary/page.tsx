@@ -47,12 +47,21 @@ export default function SummaryPage() {
     fetchData();
   }, [supabase, startDate, endDate]);
 
-  const getFileCount = (t: TransactionWithDetails): number => t.files?.length || 0;
-  const getRequiredCount = (t: TransactionWithDetails): number => {
+  const isComplete = (t: TransactionWithDetails) => {
+    if (t.category === "shop_without_receipt") {
+      const hasCard = t.files?.some(f => f.file_type === "business_card");
+      const hasReceipt = t.files?.some(f => f.file_type === "receipt");
+      const hasSlip = t.files?.some(f => f.file_type === "transfer_slip");
+      
+      if (hasCard && hasReceipt && hasSlip) return true; // 3 files
+      if (hasCard && hasReceipt && !hasSlip) return true; // Cash payment (2 files)
+      return false;
+    }
+
     const cat = t.category as keyof typeof REQUIRED_FILES;
-    return REQUIRED_FILES[cat]?.length || 0;
+    const reqCount = REQUIRED_FILES[cat]?.length || 0;
+    return (t.files?.length || 0) >= reqCount;
   };
-  const isComplete = (t: TransactionWithDetails) => getFileCount(t) >= getRequiredCount(t);
 
   const filtered = filter === "complete"
     ? transactions.filter(isComplete)

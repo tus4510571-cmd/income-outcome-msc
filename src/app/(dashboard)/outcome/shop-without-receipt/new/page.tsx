@@ -59,6 +59,15 @@ export default function NewShopWithoutReceiptPage() {
   const [dailySeq, setDailySeq] = useState("001");
   const [monthlySeq, setMonthlySeq] = useState("0001");
 
+  type UploadTask = {
+    id: string;
+    name: string;
+    status: "pending" | "uploading" | "success" | "error";
+    link?: string;
+    error?: string;
+  };
+  const [uploadTasks, setUploadTasks] = useState<UploadTask[]>([]);
+
   const router = useRouter();
 
   // Load sequences and names
@@ -190,15 +199,26 @@ export default function NewShopWithoutReceiptPage() {
 
   const handleFinalSubmit = async () => {
     setUploadStatus("uploading");
-    setUploadProgress(5);
     setUploadError("");
+
+    const initialTasks: { id: string, name: string, status: "pending" | "uploading" | "success" | "error", link?: string, error?: string }[] = [
+      { id: "db", name: "สร้างรายการในฐานข้อมูล", status: "uploading" }
+    ];
+    if (businessCardPreview) initialTasks.push({ id: "card", name: "อัปโหลดนามบัตรร้านค้า", status: "pending" });
+    if (slipPreview && !paidWithCash) initialTasks.push({ id: "slip", name: "อัปโหลดสลิปการโอนเงิน", status: "pending" });
+    initialTasks.push({ id: "receipt", name: "สร้างและอัปโหลดใบรับรองแทนใบเสร็จ", status: "pending" });
+    
+    setUploadTasks(initialTasks);
+
+    const updateTask = (id: string, updates: any) => {
+      setUploadTasks(prev => prev.map(t => t.id === id ? { ...t, ...updates } : t));
+    };
 
     try {
       const folderId = await getSetting("outcome_drive_folder_id");
       if (!folderId) {
         throw new Error("ยังไม่ได้ตั้งค่า Google Drive สำหรับ Outcome ในหน้า Setting");
       }
-      setUploadProgress(10);
 
       const transaction = await createTransaction({
         type: "outcome",
@@ -210,7 +230,7 @@ export default function NewShopWithoutReceiptPage() {
         shop_name: shopName,
       });
       setTransactionId(transaction.id);
-      setUploadProgress(20);
+      updateTask("db", { status: "success" });
 
       const receiptElement = document.getElementById("receipt-capture");
       if (!receiptElement) throw new Error("Receipt template not found");
@@ -219,7 +239,6 @@ export default function NewShopWithoutReceiptPage() {
       
       const canvas = await html2canvas(receiptElement, { scale: 2, useCORS: true, allowTaint: true });
       const receiptBase64 = canvas.toDataURL("image/jpeg");
-      setUploadProgress(40);
 
       const dateObj = new Date(date);
       const yyyy = dateObj.getFullYear();
@@ -233,37 +252,49 @@ export default function NewShopWithoutReceiptPage() {
       const baseFileName = `${filePrefix}-OUT-ไม่มีบิล-${safeShopName}`;
 
       if (businessCardPreview) {
-        const pdfBase64 = await convertImageToPdfBase64(businessCardPreview, businessCardFile?.type || "image/jpeg");
-        const res = await uploadToGoogleDrive(pdfBase64, folderId, baseFileName, date, "ร้านค้าไม่มีใบเสร็จ");
-        if (!res.success) throw new Error(res.error || "Failed to upload business card to Drive");
-        if (res.link) await saveGoogleDriveFileLink(transaction.id, "business_card", res.link, baseFileName);
+        updateTask("card", { status: "uploading" });
+        try {
+          const pdfBase64 = await convertImageToPdfBase64(businessCardPreview, businessCardFile?.type || "image/jpeg");
+          const res = await uploadToGoogleDrive(pdfBase64, folderId, baseFileName, date, "ร้านค้าไม่มีใบเสร็จ");
+          if (!res.success) throw new Error(res.error || "Failed to upload business card to Drive");
+          if (res.link) await saveGoogleDriveFileLink(transaction.id, "business_card", res.link, baseFileName);
+          if (businessCardFile) await uploadFile(transaction.id, "business_card", date, "outcome", businessCardFile.name, businessCardPreview);
+          updateTask("card", { status: "success", link: res.link });
+        } catch (e) {
+          updateTask("card", { status: "error", error: (e as Error).message });
+          throw e;
+        }
       }
-      setUploadProgress(60);
 
       if (slipPreview && !paidWithCash) {
-        const pdfBase64 = await convertImageToPdfBase64(slipPreview, slipFile?.type || "image/jpeg");
-        const slipFileName = `${baseFileName}-slip`;
-        const res = await uploadToGoogleDrive(pdfBase64, folderId, slipFileName, date, "ร้านค้าไม่มีใบเสร็จ");
-        if (!res.success) throw new Error(res.error || "Failed to upload slip to Drive");
-        if (res.link) await saveGoogleDriveFileLink(transaction.id, "transfer_slip", res.link, slipFileName);
+        updateTask("slip", { status: "uploading" });
+        try {
+          const pdfBase64 = await convertImageToPdfBase64(slipPreview, slipFile?.type || "image/jpeg");
+          const slipFileName = `${baseFileName}-slip`;
+          const res = await uploadToGoogleDrive(pdfBase64, folderId, slipFileName, date, "ร้านค้าไม่มีใบเสร็จ");
+          if (!res.success) throw new Error(res.error || "Failed to upload slip to Drive");
+          if (res.link) await saveGoogleDriveFileLink(transaction.id, "transfer_slip", res.link, slipFileName);
+          if (slipFile) await uploadFile(transaction.id, "transfer_slip", date, "outcome", slipFile.name, slipPreview);
+          updateTask("slip", { status: "success", link: res.link });
+        } catch (e) {
+          updateTask("slip", { status: "error", error: (e as Error).message });
+          throw e;
+        }
       }
-      setUploadProgress(75);
 
-      const pdfReceiptBase64 = await convertImageToPdfBase64(receiptBase64, "image/jpeg");
-      const receiptFileName = `${baseFileName}-ใบรับรองแทนใบเสร็จรับเงิน`;
-      const res = await uploadToGoogleDrive(pdfReceiptBase64, folderId, receiptFileName, date, "ร้านค้าไม่มีใบเสร็จ");
-      if (!res.success) throw new Error(res.error || "Failed to upload generated receipt to Drive");
-      if (res.link) await saveGoogleDriveFileLink(transaction.id, "receipt", res.link, receiptFileName);
-      setUploadProgress(85);
-
-      if (businessCardFile && businessCardPreview) {
-        await uploadFile(transaction.id, "business_card", date, "outcome", businessCardFile.name, businessCardPreview);
+      updateTask("receipt", { status: "uploading" });
+      try {
+        const pdfReceiptBase64 = await convertImageToPdfBase64(receiptBase64, "image/jpeg");
+        const receiptFileName = `${baseFileName}-ใบรับรองแทนใบเสร็จรับเงิน`;
+        const res = await uploadToGoogleDrive(pdfReceiptBase64, folderId, receiptFileName, date, "ร้านค้าไม่มีใบเสร็จ");
+        if (!res.success) throw new Error(res.error || "Failed to upload generated receipt to Drive");
+        if (res.link) await saveGoogleDriveFileLink(transaction.id, "receipt", res.link, receiptFileName);
+        await uploadFile(transaction.id, "receipt", date, "outcome", "generated_receipt.jpg", receiptBase64);
+        updateTask("receipt", { status: "success", link: res.link });
+      } catch (e) {
+        updateTask("receipt", { status: "error", error: (e as Error).message });
+        throw e;
       }
-      if (slipFile && slipPreview && !paidWithCash) {
-        await uploadFile(transaction.id, "transfer_slip", date, "outcome", slipFile.name, slipPreview);
-      }
-      await uploadFile(transaction.id, "receipt", date, "outcome", "generated_receipt.jpg", receiptBase64);
-      setUploadProgress(90);
 
       await addReceiptItems(
         transaction.id,
@@ -275,13 +306,9 @@ export default function NewShopWithoutReceiptPage() {
         }))
       );
 
-      setUploadProgress(100);
       setUploadStatus("complete");
+      // ไม่ทำการ redirect อัตโนมัติ เพื่อให้ผู้ใช้กดลิงก์ดูไฟล์ได้
       
-      setTimeout(() => {
-        router.push("/outcome/shop-without-receipt");
-      }, 1500);
-
     } catch (err) {
       setUploadStatus("error");
       setUploadError((err as Error).message);
@@ -299,32 +326,47 @@ export default function NewShopWithoutReceiptPage() {
     <main className="min-h-screen p-4 md:p-8 pb-24">
       {uploadStatus !== "idle" && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm">
-          <div className="bg-white dark:bg-slate-800 p-8 rounded-2xl shadow-xl max-w-sm w-full mx-4">
+          <div className="bg-white dark:bg-slate-800 p-8 rounded-2xl shadow-xl max-w-md w-full mx-4">
             <h3 className="text-xl font-bold mb-4 text-center text-slate-800 dark:text-white">
-              กำลังบันทึกและอัปโหลด...
+              สถานะการบันทึกข้อมูล
             </h3>
-            <div className="flex justify-between text-sm mb-2 font-medium">
-              <span className={uploadStatus === "error" ? "text-red-500" : uploadStatus === "complete" ? "text-emerald-500" : "text-indigo-500"}>
-                {uploadStatus === "uploading" && "Uploading files..."}
-                {uploadStatus === "complete" && "Upload Complete!"}
-                {uploadStatus === "error" && "Upload Failed"}
-              </span>
-              <span className="text-slate-500 dark:text-slate-400">{uploadProgress}%</span>
+            
+            <div className="space-y-3 mb-6">
+              {uploadTasks.map((task) => (
+                <div key={task.id} className="flex flex-col gap-1 p-3 rounded-lg border border-slate-100 bg-slate-50">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-slate-700">{task.name}</span>
+                    <span className="text-sm">
+                      {task.status === "pending" && <span className="text-slate-400">รอดำเนินการ...</span>}
+                      {task.status === "uploading" && <span className="text-indigo-500 flex items-center gap-1"><span className="animate-spin text-lg">↻</span> กำลังอัปโหลด</span>}
+                      {task.status === "success" && <span className="text-emerald-500 font-bold">✓ สำเร็จ</span>}
+                      {task.status === "error" && <span className="text-red-500 font-bold">✗ ล้มเหลว</span>}
+                    </span>
+                  </div>
+                  {task.error && <p className="text-xs text-red-500 mt-1">{task.error}</p>}
+                  {task.link && (
+                    <a href={task.link} target="_blank" rel="noopener noreferrer" className="text-xs text-indigo-600 hover:underline flex items-center gap-1 mt-1">
+                      <span>🔗</span> ดูไฟล์ใน Google Drive
+                    </a>
+                  )}
+                </div>
+              ))}
             </div>
-            <div className="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-3 overflow-hidden">
-              <div
-                className={`h-full rounded-full transition-all duration-300 ${
-                  uploadStatus === "error" ? "bg-red-500" : uploadStatus === "complete" ? "bg-emerald-500" : "bg-indigo-500"
-                }`}
-                style={{ width: `${uploadProgress}%` }}
-              ></div>
-            </div>
+
             {uploadError && <p className="text-red-500 text-sm mt-4 text-center">{uploadError}</p>}
-            {uploadStatus === "error" && (
-              <button onClick={() => setUploadStatus("idle")} className="mt-6 w-full btn-outline">
-                ปิด
-              </button>
-            )}
+            
+            <div className="flex gap-3 mt-6">
+              {uploadStatus === "error" && (
+                <button onClick={() => setUploadStatus("idle")} className="w-full btn-outline">
+                  ปิดและแก้ไข
+                </button>
+              )}
+              {uploadStatus === "complete" && (
+                <button onClick={() => router.push("/outcome/shop-without-receipt")} className="w-full btn-primary">
+                  เสร็จสิ้น (กลับสู่หน้ารวม)
+                </button>
+              )}
+            </div>
           </div>
         </div>
       )}

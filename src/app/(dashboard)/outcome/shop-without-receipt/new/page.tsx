@@ -228,7 +228,8 @@ export default function NewShopWithoutReceiptPage() {
       const dd = String(dateObj.getDate()).padStart(2, '0');
       
       const filePrefix = `${dd}${mm}${yyyy}${dailySeq}`;
-      const safeShopName = shopName ? shopName.replace(/[^a-zA-Z0-9ก-๙\s-]/g, "").trim().replace(/\s+/g, "_") : "ไม่ระบุ";
+      const rawSafeShopName = shopName ? shopName.replace(/[^a-zA-Z0-9ก-๙\s-]/g, "").trim().replace(/\s+/g, "_") : "ไม่ระบุ";
+      const safeShopName = rawSafeShopName.length > 30 ? rawSafeShopName.substring(0, 30) : rawSafeShopName;
       const baseFileName = `${filePrefix}-OUT-ไม่มีบิล-${safeShopName}`;
 
       if (businessCardPreview) {

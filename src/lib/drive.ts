@@ -44,8 +44,8 @@ export async function uploadToGoogleDrive(base64File: string, folderId: string, 
 
     const result = await response.json();
     
-    if (!result.success) {
-      throw new Error(result.error || "Failed to upload to Google Drive via GAS");
+    if (!result.success || !result.fileId || !result.link) {
+      throw new Error(result.error || "อัปโหลดผ่านระบบเครือข่ายสำเร็จ แต่ไม่ได้รับรหัสไฟล์กลับมา (อาจเกิดจากชื่อไฟล์ยาวเกินไป กรุณาตั้งชื่อร้านให้สั้นลง)");
     }
 
     return { success: true, fileId: result.fileId, link: result.link };

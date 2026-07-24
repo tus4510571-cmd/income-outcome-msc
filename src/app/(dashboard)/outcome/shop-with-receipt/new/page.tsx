@@ -40,7 +40,8 @@ export default function NewShopWithReceiptPage() {
       const dateObj = new Date(date);
       const dateStr = `${String(dateObj.getDate()).padStart(2, '0')}${String(dateObj.getMonth() + 1).padStart(2, '0')}${dateObj.getFullYear()}`;
 
-      const safeShopName = shopName ? shopName.replace(/[^a-zA-Z0-9ก-๙\s-]/g, "").trim().replace(/\s+/g, "_") : "ไม่ระบุ";
+      const rawSafeShopName = shopName ? shopName.replace(/[^a-zA-Z0-9ก-๙\s-]/g, "").trim().replace(/\s+/g, "_") : "ไม่ระบุ";
+      const safeShopName = rawSafeShopName.length > 30 ? rawSafeShopName.substring(0, 30) : rawSafeShopName;
       const customFileName = `${dateStr}${dailySeq}-OUT-มีบิล-${safeShopName}`;
 
       // 1. Upload files to Google Drive (if any)

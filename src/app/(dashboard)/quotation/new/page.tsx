@@ -3,7 +3,6 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { generateQuotationId } from "@/lib/utils";
 
 type SellerType = "company_th" | "company_en" | "person1_th" | "person1_en" | "person2_th" | "person2_en";
 

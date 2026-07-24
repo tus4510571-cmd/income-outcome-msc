@@ -1,0 +1,209 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { createTransaction, getSetting, saveGoogleDriveFileLink, getNextDailySequence } from "@/lib/actions";
+import { uploadToGoogleDrive } from "@/lib/drive";
+import PreImageUpload, { PreUploadFile } from "@/components/PreImageUpload";
+import { convertImageToPdfBase64 } from "@/lib/pdfUtils";
+
+export default function NewShopWithReceiptPage() {
+  const [shopName, setShopName] = useState("");
+  const [description, setDescription] = useState("");
+  const [amount, setAmount] = useState("");
+  const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
+  const [dailySeq, setDailySeq] = useState("001");
+  
+  const [uploadFiles, setUploadFiles] = useState<PreUploadFile[]>([]);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadStatus, setUploadStatus] = useState<"idle" | "uploading" | "complete" | "error">("idle");
+  const [uploadError, setUploadError] = useState("");
+
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const router = useRouter();
+
+  useEffect(() => {
+    async function loadSeq() {
+      const d = await getNextDailySequence(date);
+      setDailySeq(d);
+    }
+    loadSeq();
+  }, [date]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    setError("");
+
+    try {
+      const dateObj = new Date(date);
+      const dateStr = `${String(dateObj.getDate()).padStart(2, '0')}${String(dateObj.getMonth() + 1).padStart(2, '0')}${dateObj.getFullYear()}`;
+
+      const safeShopName = shopName ? shopName.replace(/[^a-zA-Z0-9ก-๙\s-]/g, "").trim().replace(/\s+/g, "_") : "ไม่ระบุ";
+      const customFileName = `${dateStr}${dailySeq}-OUT-มีบิล-${safeShopName}`;
+
+      // 1. Upload files to Google Drive (if any)
+      const uploadedLinks: { link: string, name: string }[] = [];
+      if (uploadFiles.length > 0) {
+        setUploadStatus("uploading");
+        setUploadProgress(10);
+        
+        const folderId = await getSetting("outcome_drive_folder_id");
+        if (!folderId) {
+          throw new Error("ยังไม่ได้ตั้งค่า Google Drive Folder ID สำหรับรายจ่ายในหน้า Setting");
+        }
+
+        setUploadProgress(30);
+
+        for (let i = 0; i < uploadFiles.length; i++) {
+          const fileObj = uploadFiles[i];
+          const reader = new FileReader();
+          
+          const base64 = await new Promise<string>((resolve, reject) => {
+            reader.onload = () => resolve(reader.result as string);
+            reader.onerror = reject;
+            reader.readAsDataURL(fileObj.file);
+          });
+
+          // Convert to PDF
+          const pdfBase64 = await convertImageToPdfBase64(base64, fileObj.file.type);
+          const finalName = uploadFiles.length > 1 ? `${customFileName}-${i+1}` : customFileName;
+
+          const res = await uploadToGoogleDrive(pdfBase64, folderId, finalName, date, "ร้านค้ามีใบเสร็จ");
+          if (res.link) {
+            uploadedLinks.push({ link: res.link, name: finalName });
+          }
+          setUploadProgress(30 + Math.floor(((i + 1) / uploadFiles.length) * 60));
+        }
+
+        setUploadProgress(100);
+        setUploadStatus("complete");
+        setTimeout(() => {
+          setUploadFiles([]);
+        }, 2000);
+      }
+
+      // 2. Create Transaction
+      const transaction = await createTransaction({
+        type: "outcome",
+        category: "shop_with_receipt",
+        description,
+        amount: parseFloat(amount) || 0,
+        currency: "THB",
+        transaction_date: date,
+        shop_name: shopName,
+      });
+
+      // 3. Save Google Drive Links to DB
+      for (const item of uploadedLinks) {
+        await saveGoogleDriveFileLink(transaction.id, "receipt", item.link, item.name);
+      }
+
+      router.push("/outcome/shop-with-receipt");
+    } catch (err) {
+      setError((err as Error).message);
+      setUploadStatus("error");
+      setUploadError((err as Error).message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <main className="min-h-screen p-4 md:p-8">
+      <div className="max-w-2xl mx-auto">
+        <div className="mb-8">
+          <h1 className="text-2xl font-bold text-slate-800">สร้างรายการใหม่</h1>
+          <p className="text-slate-500 mt-1">ร้านค้าที่มีใบเสร็จ</p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="card space-y-4">
+          <div>
+            <label className="label">ชื่อร้านค้า</label>
+            <input
+              type="text"
+              value={shopName}
+              onChange={(e) => setShopName(e.target.value)}
+              className="input-field"
+              placeholder="กรอกชื่อร้านค้า"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="label">รายละเอียด</label>
+            <input
+              type="text"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className="input-field"
+              placeholder="กรอกรายละเอียด (ไม่บังคับ)"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="label">จำนวนเงิน (฿)</label>
+              <input
+                type="number"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                className="input-field"
+                placeholder="0.00"
+                min="0"
+                step="0.01"
+                required
+              />
+            </div>
+            <div>
+              <label className="label">วันที่</label>
+              <input
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                className="input-field"
+                required
+              />
+            </div>
+          </div>
+
+          <div className="pt-4 border-t border-slate-100 dark:border-slate-700">
+             <h2 className="text-lg font-semibold text-slate-700 border-b pb-2 mb-4">อัปโหลดหลักฐาน (ไฟล์จะถูกแปลงเป็น PDF อัตโนมัติ)</h2>
+             <p className="text-sm text-slate-500 mb-2">อัปโหลดสลิปการโอนเงิน หรือใบเสร็จร้านค้าได้ที่นี่</p>
+            <PreImageUpload
+              files={uploadFiles}
+              onChange={setUploadFiles}
+              uploadProgress={uploadProgress}
+              uploadStatus={uploadStatus}
+              uploadError={uploadError}
+            />
+          </div>
+
+          {error && (
+            <div className="p-3 rounded-xl bg-red-50 text-red-700 border border-red-200 text-sm">
+              {error}
+            </div>
+          )}
+
+          <div className="pt-4 flex gap-3">
+             <button
+               type="button"
+               onClick={() => router.push("/outcome/shop-with-receipt")} 
+               className="btn-outline flex-1"
+             >
+               ยกเลิก
+             </button>
+             <button
+               type="submit"
+               disabled={saving || uploadStatus === "uploading"}
+               className="btn-primary flex-1"
+             >
+               {saving || uploadStatus === "uploading" ? "กำลังบันทึก..." : "บันทึกข้อมูล"}
+             </button>
+          </div>
+        </form>
+      </div>
+    </main>
+  );
+}

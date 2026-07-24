@@ -7,8 +7,6 @@ import { createClient } from "@/lib/supabase/client";
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [fullName, setFullName] = useState("");
-  const [isSignUp, setIsSignUp] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
@@ -20,23 +18,13 @@ export default function LoginPage() {
     setError("");
 
     try {
-      if (isSignUp) {
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: { data: { full_name: fullName } },
-        });
-        if (error) throw error;
-        setError("ตรวจสอบอีเมลของคุณเพื่อยืนยันการสมัครสมาชิก");
-      } else {
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-        if (error) throw error;
-        router.push("/");
-        router.refresh();
-      }
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      if (error) throw error;
+      router.push("/");
+      router.refresh();
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -52,25 +40,12 @@ export default function LoginPage() {
             ระบบรายรับ-รายจ่าย
           </h1>
           <p className="text-slate-500">
-            {isSignUp ? "สร้างบัญชีใหม่" : "เข้าสู่ระบบ"}
+            เข้าสู่ระบบ
           </p>
         </div>
 
         <div className="card">
           <form onSubmit={handleSubmit} className="space-y-4">
-            {isSignUp && (
-              <div>
-                <label className="label">ชื่อ-สกุล</label>
-                <input
-                  type="text"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  className="input-field"
-                  placeholder="กรอกชื่อ-สกุล"
-                />
-              </div>
-            )}
-
             <div>
               <label className="label">อีเมล</label>
               <input
@@ -86,15 +61,6 @@ export default function LoginPage() {
             <div>
               <div className="flex items-center justify-between">
                 <label className="label">รหัสผ่าน</label>
-                {!isSignUp && (
-                  <button
-                    type="button"
-                    onClick={() => router.push("/forgot-password")}
-                    className="text-xs text-indigo-600 hover:text-indigo-800 font-medium"
-                  >
-                    ลืมรหัสผ่าน?
-                  </button>
-                )}
               </div>
               <input
                 type="password"
@@ -124,19 +90,17 @@ export default function LoginPage() {
               disabled={loading}
               className="btn-primary w-full"
             >
-              {loading ? "กำลังดำเนินการ..." : isSignUp ? "สมัครสมาชิก" : "เข้าสู่ระบบ"}
+              {loading ? "กำลังดำเนินการ..." : "เข้าสู่ระบบ"}
             </button>
           </form>
 
           <div className="mt-6 text-center">
             <button
-              onClick={() => {
-                setIsSignUp(!isSignUp);
-                setError("");
-              }}
+              type="button"
+              onClick={() => router.push("/forgot-password")}
               className="text-sm text-indigo-600 hover:text-indigo-800 font-medium"
             >
-              {isSignUp ? "มีบัญชีอยู่แล้ว? เข้าสู่ระบบ" : "ยังไม่มีบัญชี? สมัครสมาชิก"}
+              ลืมรหัสผ่าน? (Forgot Password)
             </button>
           </div>
         </div>

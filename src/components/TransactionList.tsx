@@ -81,8 +81,12 @@ export default function TransactionList({ transactions, baseHref, showFiles = fa
                 const reqCount = getRequiredCount(t);
                 const uploadedCount = t.files?.length || 0;
                 
-                if (uploadedCount >= reqCount) {
-                  return <span className="text-slate-400">{t.description || "Completed"}</span>;
+                if (uploadedCount >= reqCount && reqCount > 0) {
+                  return <span className="text-slate-400">{t.description || "Completed"} ({uploadedCount}/{reqCount})</span>;
+                }
+
+                if (reqCount === 0) {
+                   return <span className="text-slate-400">{t.description || "Completed"} (No Files Required)</span>;
                 }
 
                 const uploadedTypes = t.files?.map(f => f.file_type) || [];
@@ -95,6 +99,7 @@ export default function TransactionList({ transactions, baseHref, showFiles = fa
                 if (t.category === "shop_without_receipt") {
                   checkMissing("business_card", "นามบัตร");
                   checkMissing("receipt", "ใบรับรองฯ");
+                  // Only require slip if they didn't specify cash payment
                   if (reqCount === 3) checkMissing("transfer_slip", "สลิปโอนเงิน");
                 } else if (t.category === "shop_with_receipt") {
                   checkMissing("transfer_slip", "สลิปโอนเงิน");
@@ -109,7 +114,7 @@ export default function TransactionList({ transactions, baseHref, showFiles = fa
 
                 return (
                   <span className="text-red-500 font-medium">
-                    Incomplete (ขาด: {missing.join(", ")})
+                    Incomplete ({uploadedCount}/{reqCount} ขาด: {missing.join(", ")})
                   </span>
                 );
               };

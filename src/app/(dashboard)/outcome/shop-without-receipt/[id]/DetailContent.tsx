@@ -49,9 +49,10 @@ export default function DetailContent({ transaction }: DetailContentProps) {
             <span>🖨️</span> พิมพ์ใบเสร็จ
           </a>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {renderFileBox("transfer_slip", "สลิปการโอนเงิน")}
           {renderFileBox("business_card", "นามบัตรร้านค้า")}
+          {renderFileBox("receipt", "ใบรับรองแทนใบเสร็จ")}
         </div>
       </div>
 

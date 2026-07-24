@@ -78,6 +78,43 @@ export default function TransactionList({ transactions, baseHref, showFiles = fa
                 return t.expense_detail?.shop_name || t.expense_detail?.employee_name;
               };
 
+              const getStatusElement = () => {
+                const reqCount = getRequiredCount(t);
+                const uploadedCount = t.files?.length || 0;
+                
+                if (uploadedCount >= reqCount) {
+                  return <span className="text-slate-400">{t.description || "Completed"}</span>;
+                }
+
+                const uploadedTypes = t.files?.map(f => f.file_type) || [];
+                const missing: string[] = [];
+
+                const checkMissing = (type: string, name: string) => {
+                  if (!uploadedTypes.includes(type)) missing.push(name);
+                };
+
+                if (t.category === "shop_without_receipt") {
+                  checkMissing("business_card", "นามบัตร");
+                  checkMissing("receipt", "ใบรับรองฯ");
+                  if (reqCount === 3) checkMissing("transfer_slip", "สลิปโอนเงิน");
+                } else if (t.category === "shop_with_receipt") {
+                  checkMissing("transfer_slip", "สลิปโอนเงิน");
+                  checkMissing("receipt", "ใบเสร็จ");
+                } else if (t.category === "employee_labor") {
+                  checkMissing("transfer_slip", "สลิปโอนเงิน");
+                  checkMissing("id_card_copy", "สำเนาบัตรฯ");
+                  checkMissing("employee_receipt", "ใบสำคัญรับเงิน");
+                } else if (t.type === "income") {
+                  checkMissing("receipt", "หลักฐาน");
+                }
+
+                return (
+                  <span className="text-red-500 font-medium">
+                    Incomplete (ขาด: {missing.join(", ")})
+                  </span>
+                );
+              };
+
               return (
                 <tr key={t.id} className="group hover:bg-slate-50/50 transition-colors">
                   <td className="py-4 px-6 text-sm text-slate-500 whitespace-nowrap">
@@ -88,8 +125,8 @@ export default function TransactionList({ transactions, baseHref, showFiles = fa
                       <span className="text-sm font-bold text-slate-700 truncate max-w-[200px] md:max-w-[300px]">
                         {getDetailName() || getCategoryLabel()}
                       </span>
-                      <span className="text-xs text-slate-400 truncate max-w-[200px] md:max-w-[300px]">
-                        {t.description || "Completed"}
+                      <span className="text-xs truncate max-w-[200px] md:max-w-[300px]">
+                        {getStatusElement()}
                       </span>
                     </div>
                   </td>

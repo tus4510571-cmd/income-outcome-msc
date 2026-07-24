@@ -1,16 +1,52 @@
 import { PDFDocument } from "pdf-lib";
 
+export async function compressImageBase64(base64Str: string, mimeType: string, maxWidth = 1600, quality = 0.8): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      let width = img.width;
+      let height = img.height;
+
+      if (width > maxWidth) {
+        height = Math.round((height * maxWidth) / width);
+        width = maxWidth;
+      }
+
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return reject("Canvas not supported");
+      
+      // White background for PNG to JPEG conversion
+      if (mimeType !== "image/png") {
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, width, height);
+      }
+      
+      ctx.drawImage(img, 0, 0, width, height);
+      
+      // Always output JPEG for compression (unless it's a PNG that needs transparency, but PDF doesn't strictly need it here)
+      // We'll stick to jpeg for best size reduction
+      resolve(canvas.toDataURL("image/jpeg", quality));
+    };
+    img.onerror = reject;
+    img.src = base64Str.startsWith('data:') ? base64Str : `data:${mimeType};base64,${base64Str}`;
+  });
+}
+
 export async function convertImageToPdfBase64(base64Image: string, mimeType: string): Promise<string> {
   if (mimeType === "application/pdf") {
     return base64Image;
   }
 
+  // Compress image to ensure it fits within Vercel's 4.5MB Server Action limit
   let workingBase64 = base64Image;
   let workingMimeType = mimeType;
   
-  if (mimeType === "image/webp") {
-    workingBase64 = await convertWebpToPng(base64Image);
-    workingMimeType = "image/png";
+  if (mimeType.startsWith("image/")) {
+    workingBase64 = await compressImageBase64(base64Image, mimeType, 1600, 0.8);
+    workingMimeType = "image/jpeg";
   }
 
   const pdfDoc = await PDFDocument.create();
@@ -37,21 +73,4 @@ export async function convertImageToPdfBase64(base64Image: string, mimeType: str
 
   const pdfBytes = await pdfDoc.saveAsBase64({ dataUri: true });
   return pdfBytes;
-}
-
-function convertWebpToPng(webpBase64: string): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => {
-      const canvas = document.createElement("canvas");
-      canvas.width = img.width;
-      canvas.height = img.height;
-      const ctx = canvas.getContext("2d");
-      if (!ctx) return reject("Canvas not supported");
-      ctx.drawImage(img, 0, 0);
-      resolve(canvas.toDataURL("image/png"));
-    };
-    img.onerror = reject;
-    img.src = webpBase64.startsWith('data:') ? webpBase64 : `data:image/webp;base64,${webpBase64}`;
-  });
 }

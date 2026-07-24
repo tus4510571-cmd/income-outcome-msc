@@ -198,18 +198,21 @@ export default function NewShopWithoutReceiptPage() {
 
       if (businessCardPreview) {
         const pdfBase64 = await convertImageToPdfBase64(businessCardPreview, businessCardFile?.type || "image/jpeg");
-        await uploadToGoogleDrive(pdfBase64, folderId, baseFileName, date, "ร้านค้าไม่มีใบเสร็จ");
+        const res = await uploadToGoogleDrive(pdfBase64, folderId, baseFileName, date, "ร้านค้าไม่มีใบเสร็จ");
+        if (!res.success) throw new Error(res.error || "Failed to upload business card to Drive");
       }
       setUploadProgress(60);
 
       if (slipPreview && !paidWithCash) {
         const pdfBase64 = await convertImageToPdfBase64(slipPreview, slipFile?.type || "image/jpeg");
-        await uploadToGoogleDrive(pdfBase64, folderId, `${baseFileName}-slip`, date, "ร้านค้าไม่มีใบเสร็จ");
+        const res = await uploadToGoogleDrive(pdfBase64, folderId, `${baseFileName}-slip`, date, "ร้านค้าไม่มีใบเสร็จ");
+        if (!res.success) throw new Error(res.error || "Failed to upload slip to Drive");
       }
       setUploadProgress(75);
 
       const pdfReceiptBase64 = await convertImageToPdfBase64(receiptBase64, "image/jpeg");
-      await uploadToGoogleDrive(pdfReceiptBase64, folderId, `${baseFileName}-ใบรับรองแทนใบเสร็จรับเงิน`, date, "ร้านค้าไม่มีใบเสร็จ");
+      const res = await uploadToGoogleDrive(pdfReceiptBase64, folderId, `${baseFileName}-ใบรับรองแทนใบเสร็จรับเงิน`, date, "ร้านค้าไม่มีใบเสร็จ");
+      if (!res.success) throw new Error(res.error || "Failed to upload generated receipt to Drive");
       setUploadProgress(85);
 
       if (businessCardFile && businessCardPreview) {

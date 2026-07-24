@@ -51,6 +51,6 @@ export async function uploadToGoogleDrive(base64File: string, folderId: string, 
     return { success: true, fileId: result.fileId, link: result.link };
   } catch (error) {
     console.error("Google Drive GAS Upload Error:", error);
-    throw new Error((error as Error).message || "Failed to upload to Google Drive");
+    return { success: false, error: (error as Error).message || "Failed to upload to Google Drive" };
   }
 }

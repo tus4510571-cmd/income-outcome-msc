@@ -93,7 +93,7 @@ export default function TransactionList({ transactions, baseHref, showFiles = fa
                 const missing: string[] = [];
 
                 const checkMissing = (type: string, name: string) => {
-                  if (!uploadedTypes.includes(type)) missing.push(name);
+                  if (!uploadedTypes.includes(type as any)) missing.push(name);
                 };
 
                 if (t.category === "shop_without_receipt") {

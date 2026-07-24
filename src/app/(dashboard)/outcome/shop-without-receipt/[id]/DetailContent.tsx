@@ -64,7 +64,8 @@ export default function DetailContent({ transaction }: DetailContentProps) {
                 <tr>
                   <th className="text-left px-4 py-2 font-medium text-slate-600">รายการ</th>
                   <th className="text-center px-4 py-2 font-medium text-slate-600">จำนวน</th>
-                  <th className="text-right px-4 py-2 font-medium text-slate-600">ราคา</th>
+                  <th className="text-right px-4 py-2 font-medium text-slate-600">ราคา/หน่วย</th>
+                  <th className="text-right px-4 py-2 font-medium text-slate-600">รวม</th>
                 </tr>
               </thead>
               <tbody>
@@ -72,6 +73,7 @@ export default function DetailContent({ transaction }: DetailContentProps) {
                   <tr key={item.id} className="border-t border-slate-100">
                     <td className="px-4 py-2">{item.product_name}</td>
                     <td className="px-4 py-2 text-center">{item.quantity}</td>
+                    <td className="px-4 py-2 text-right">{formatCurrency(item.unit_price, item.currency)}</td>
                     <td className="px-4 py-2 text-right">{formatCurrency(item.unit_price * item.quantity, item.currency)}</td>
                   </tr>
                 ))}
@@ -82,6 +84,7 @@ export default function DetailContent({ transaction }: DetailContentProps) {
                   <td className="px-4 py-2 text-center">
                     {transaction.receipt_items.reduce((s, i) => s + i.quantity, 0)}
                   </td>
+                  <td className="px-4 py-2"></td>
                   <td className="px-4 py-2 text-right text-indigo-600">
                     {formatCurrency(transaction.amount, transaction.currency)}
                   </td>

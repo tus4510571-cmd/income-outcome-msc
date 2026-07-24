@@ -64,6 +64,7 @@ export default function NewShopWithoutReceiptPage() {
     name: string;
     status: "pending" | "uploading" | "success" | "error";
     link?: string;
+    path?: string;
     error?: string;
   };
   const [uploadTasks, setUploadTasks] = useState<UploadTask[]>([]);
@@ -251,6 +252,10 @@ export default function NewShopWithoutReceiptPage() {
       const safeShopName = rawSafeShopName.length > 30 ? rawSafeShopName.substring(0, 30) : rawSafeShopName;
       const baseFileName = `${filePrefix}-OUT-ไม่มีบิล-${safeShopName}`;
 
+      const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+      const driveMonthStr = `${String(dateObj.getMonth() + 1).padStart(2, '0')} ${months[dateObj.getMonth()]}`;
+      const drivePathPrefix = `${yyyy} > ${driveMonthStr} > ร้านค้าไม่มีใบเสร็จ`;
+
       if (businessCardPreview) {
         updateTask("card", { status: "uploading" });
         try {
@@ -259,7 +264,7 @@ export default function NewShopWithoutReceiptPage() {
           if (!res.success) throw new Error(res.error || "Failed to upload business card to Drive");
           if (res.link) await saveGoogleDriveFileLink(transaction.id, "business_card", res.link, baseFileName);
           if (businessCardFile) await uploadFile(transaction.id, "business_card", date, "outcome", businessCardFile.name, businessCardPreview);
-          updateTask("card", { status: "success", link: res.link });
+          updateTask("card", { status: "success", link: res.link, path: `${drivePathPrefix} > ${baseFileName}.pdf` });
         } catch (e) {
           updateTask("card", { status: "error", error: (e as Error).message });
           throw e;
@@ -275,7 +280,7 @@ export default function NewShopWithoutReceiptPage() {
           if (!res.success) throw new Error(res.error || "Failed to upload slip to Drive");
           if (res.link) await saveGoogleDriveFileLink(transaction.id, "transfer_slip", res.link, slipFileName);
           if (slipFile) await uploadFile(transaction.id, "transfer_slip", date, "outcome", slipFile.name, slipPreview);
-          updateTask("slip", { status: "success", link: res.link });
+          updateTask("slip", { status: "success", link: res.link, path: `${drivePathPrefix} > ${slipFileName}.pdf` });
         } catch (e) {
           updateTask("slip", { status: "error", error: (e as Error).message });
           throw e;
@@ -290,7 +295,7 @@ export default function NewShopWithoutReceiptPage() {
         if (!res.success) throw new Error(res.error || "Failed to upload generated receipt to Drive");
         if (res.link) await saveGoogleDriveFileLink(transaction.id, "receipt", res.link, receiptFileName);
         await uploadFile(transaction.id, "receipt", date, "outcome", "generated_receipt.jpg", receiptBase64);
-        updateTask("receipt", { status: "success", link: res.link });
+        updateTask("receipt", { status: "success", link: res.link, path: `${drivePathPrefix} > ${receiptFileName}.pdf` });
       } catch (e) {
         updateTask("receipt", { status: "error", error: (e as Error).message });
         throw e;
@@ -344,6 +349,11 @@ export default function NewShopWithoutReceiptPage() {
                     </span>
                   </div>
                   {task.error && <p className="text-xs text-red-500 mt-1">{task.error}</p>}
+                  {task.path && task.status === "success" && (
+                    <p className="text-[10px] text-slate-500 mt-1 bg-white p-1 rounded border border-slate-100 font-mono break-all">
+                      📍 {task.path}
+                    </p>
+                  )}
                   {task.link && (
                     <a href={task.link} target="_blank" rel="noopener noreferrer" className="text-xs text-indigo-600 hover:underline flex items-center gap-1 mt-1">
                       <span>🔗</span> ดูไฟล์ใน Google Drive

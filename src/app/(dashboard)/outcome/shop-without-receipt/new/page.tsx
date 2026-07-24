@@ -30,12 +30,21 @@ export default function NewShopWithoutReceiptPage() {
   const slipInputRef = useRef<HTMLInputElement>(null);
 
   // Step 4: Signatures
-  const [savedNames, setSavedNames] = useState<string[]>([]);
+  const [savedNames, setSavedNames] = useState<string[]>(["เมทินี รัตนไชย"]);
+  const [savedPositions, setSavedPositions] = useState<string[]>(["กรรมการผู้จัดการ"]);
+  
   const [payerName, setPayerName] = useState("");
   const [receiverName, setReceiverName] = useState("");
   const [approverName, setApproverName] = useState("");
+  
+  const [employeeName, setEmployeeName] = useState("เมทินี รัตนไชย");
+  const [employeePosition, setEmployeePosition] = useState("กรรมการผู้จัดการ");
+
   const [newNameInput, setNewNameInput] = useState("");
   const [isAddingName, setIsAddingName] = useState(false);
+  
+  const [newPositionInput, setNewPositionInput] = useState("");
+  const [isAddingPosition, setIsAddingPosition] = useState(false);
 
   // System States
   const [transactionId, setTransactionId] = useState<string | null>(null);
@@ -63,7 +72,16 @@ export default function NewShopWithoutReceiptPage() {
       const namesStr = await getSetting("saved_signature_names");
       if (namesStr) {
         try {
-          setSavedNames(JSON.parse(namesStr));
+          const names = JSON.parse(namesStr);
+          if (names.length > 0) setSavedNames(names);
+        } catch(e) {}
+      }
+
+      const positionsStr = await getSetting("saved_employee_positions");
+      if (positionsStr) {
+        try {
+          const positions = JSON.parse(positionsStr);
+          if (positions.length > 0) setSavedPositions(positions);
         } catch(e) {}
       }
     }
@@ -85,6 +103,23 @@ export default function NewShopWithoutReceiptPage() {
     setIsAddingName(false);
     
     await setSetting("saved_signature_names", JSON.stringify(updatedList));
+  };
+
+  const handleAddNewPosition = async () => {
+    if (!newPositionInput.trim()) return;
+    const newPos = newPositionInput.trim();
+    if (savedPositions.includes(newPos)) {
+       setNewPositionInput("");
+       setIsAddingPosition(false);
+       return;
+    }
+    
+    const updatedList = [...savedPositions, newPos];
+    setSavedPositions(updatedList);
+    setNewPositionInput("");
+    setIsAddingPosition(false);
+    
+    await setSetting("saved_employee_positions", JSON.stringify(updatedList));
   };
 
   const handleCardChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -435,7 +470,61 @@ export default function NewShopWithoutReceiptPage() {
                 <h2 className="text-lg font-bold">ข้อมูลการลงนาม และพรีวิวเอกสาร</h2>
              </div>
              
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6 bg-slate-50 p-6 rounded-xl border border-slate-200">
+               <div className="md:col-span-2 mb-2 border-b pb-2">
+                 <h3 className="font-bold text-slate-700">ข้อมูลผู้เบิกเงิน</h3>
+               </div>
+               <div>
+                  <label className="label">ชื่อ</label>
+                  <select 
+                    className="input-field mb-2" 
+                    value={employeeName} 
+                    onChange={(e) => setEmployeeName(e.target.value)}
+                  >
+                     {savedNames.map(name => <option key={name} value={name}>{name}</option>)}
+                  </select>
+               </div>
+               <div>
+                  <label className="label">ตำแหน่ง</label>
+                  <select 
+                    className="input-field mb-2" 
+                    value={employeePosition} 
+                    onChange={(e) => setEmployeePosition(e.target.value)}
+                  >
+                     {savedPositions.map(pos => <option key={pos} value={pos}>{pos}</option>)}
+                  </select>
+               </div>
+
+               {/* Add New Position Section */}
+               <div className="md:col-span-2 border-t border-slate-200 pt-4">
+                 {!isAddingPosition ? (
+                   <button 
+                     type="button" 
+                     onClick={() => setIsAddingPosition(true)} 
+                     className="text-indigo-600 font-medium text-sm hover:underline"
+                   >
+                     + สร้างตำแหน่งใหม่
+                   </button>
+                 ) : (
+                   <div className="flex gap-2">
+                     <input 
+                       type="text" 
+                       className="input-field flex-1" 
+                       placeholder="พิมพ์ตำแหน่งใหม่" 
+                       value={newPositionInput}
+                       onChange={e => setNewPositionInput(e.target.value)}
+                     />
+                     <button type="button" onClick={handleAddNewPosition} className="btn-primary whitespace-nowrap">เพิ่มตำแหน่ง</button>
+                     <button type="button" onClick={() => { setIsAddingPosition(false); setNewPositionInput(""); }} className="btn-outline">ยกเลิก</button>
+                   </div>
+                 )}
+               </div>
+             </div>
+
              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 bg-slate-50 p-6 rounded-xl border border-slate-200">
+               <div className="md:col-span-3 mb-2 border-b pb-2">
+                 <h3 className="font-bold text-slate-700">ข้อมูลผู้ลงนาม (ลายเซ็นต์)</h3>
+               </div>
                <div>
                   <label className="label">ผู้จ่ายเงิน</label>
                   <select 
@@ -520,13 +609,13 @@ export default function NewShopWithoutReceiptPage() {
                   </div>
 
                   <div className="space-y-4 text-base mb-8">
-                    <div className="flex">
+                    <div className="flex items-end">
                       <span className="w-24 font-bold">ชื่อ :</span>
-                      <span className="flex-1 border-b" style={{ borderColor: "#000000" }}>&nbsp;</span>
+                      <span className="flex-1 border-b text-center px-4" style={{ borderColor: "#000000" }}>{employeeName}</span>
                     </div>
-                    <div className="flex">
+                    <div className="flex items-end">
                       <span className="w-24 font-bold">ตำแหน่ง :</span>
-                      <span className="flex-1 border-b" style={{ borderColor: "#000000" }}>&nbsp;</span>
+                      <span className="flex-1 border-b text-center px-4" style={{ borderColor: "#000000" }}>{employeePosition}</span>
                     </div>
                     <div className="flex items-end">
                       <span className="font-bold mr-4">ขอรับรองว่าได้จ่ายเงินจำนวน :</span>

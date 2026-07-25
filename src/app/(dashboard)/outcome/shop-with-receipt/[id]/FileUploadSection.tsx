@@ -43,9 +43,8 @@ export default function FileUploadSection({
 
   const renderAttachments = () => {
     const attachments = existingFiles.filter((f) => f.file_type.startsWith("attachment_"));
-    if (!attachments || attachments.length === 0) return null;
-
-    return attachments.map((file, idx) => {
+    
+    const elements = attachments.map((file, idx) => {
       const label = `เอกสารแนบ ${idx + 1}`;
       return (
         <div key={file.id} className="border-2 rounded-xl p-4 border-emerald-300 bg-emerald-50 mb-4">
@@ -54,6 +53,21 @@ export default function FileUploadSection({
         </div>
       );
     });
+
+    const nextIndex = attachments.length + 1;
+    elements.push(
+      <div key="new-attachment" className="border-2 rounded-xl p-4 border-slate-200 mb-4">
+        <FileUpload
+          transactionId={transactionId}
+          fileType={`attachment_${nextIndex}`}
+          transactionDate={transactionDate}
+          type="outcome"
+          label={`เพิ่มเอกสารแนบ ${nextIndex} (ถ้ามี)`}
+        />
+      </div>
+    );
+
+    return elements;
   };
 
   return (

@@ -36,10 +36,9 @@ export default function DetailContent({ transaction }: DetailContentProps) {
   };
 
   const renderAttachments = () => {
-    const attachments = transaction.files?.filter((f) => f.file_type.startsWith("attachment_") || f.file_type === "business_card" || f.file_type === "cash_bill");
-    if (!attachments || attachments.length === 0) return null;
-
-    return attachments.map((file, idx) => {
+    const attachments = transaction.files?.filter((f) => f.file_type.startsWith("attachment_") || f.file_type === "business_card" || f.file_type === "cash_bill") || [];
+    
+    const elements = attachments.map((file, idx) => {
       let label = `เอกสารแนบ ${idx + 1}`;
       if (file.file_type === "business_card") label = "นามบัตรร้านค้า";
       if (file.file_type === "cash_bill") label = "บิลเงินสด";
@@ -51,6 +50,21 @@ export default function DetailContent({ transaction }: DetailContentProps) {
         </div>
       );
     });
+
+    const nextIndex = attachments.length + 1;
+    elements.push(
+      <div key="new-attachment" className="border-2 rounded-xl p-4 border-slate-200 mb-4">
+        <FileUpload
+          transactionId={transaction.id}
+          fileType={`attachment_${nextIndex}`}
+          transactionDate={transaction.transaction_date}
+          type="outcome"
+          label={`เพิ่มเอกสารแนบ ${nextIndex} (ถ้ามี)`}
+        />
+      </div>
+    );
+
+    return elements;
   };
 
   return (

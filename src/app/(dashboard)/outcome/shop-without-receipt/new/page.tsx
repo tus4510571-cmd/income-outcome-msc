@@ -9,7 +9,7 @@ import { createTransaction, addReceiptItems, uploadFile, getSetting, setSetting,
 import { uploadToGoogleDrive } from "@/lib/drive";
 import { convertImageToPdfBase64 } from "@/lib/pdfUtils";
 import { thaiBahtText } from "@/lib/thaiBaht";
-import html2canvas from "html2canvas";
+import { toJpeg } from "html-to-image";
 
 export default function NewShopWithoutReceiptPage() {
   // Step 1: AI Data
@@ -296,8 +296,7 @@ export default function NewShopWithoutReceiptPage() {
       
       await new Promise(r => setTimeout(r, 500)); 
       
-      const canvas = await html2canvas(receiptElement, { scale: 2, useCORS: true, allowTaint: true });
-      const receiptBase64 = canvas.toDataURL("image/jpeg");
+      const receiptBase64 = await toJpeg(receiptElement, { quality: 0.95, pixelRatio: 2 });
 
       const dateObj = new Date(date);
       const yyyy = dateObj.getFullYear();
@@ -359,8 +358,7 @@ export default function NewShopWithoutReceiptPage() {
         try {
           const cashBillElement = document.getElementById("cashbill-capture");
           if (!cashBillElement) throw new Error("Cash bill template not found");
-          const cbCanvas = await html2canvas(cashBillElement, { scale: 2, useCORS: true, allowTaint: true });
-          const cbBase64 = cbCanvas.toDataURL("image/jpeg");
+          const cbBase64 = await toJpeg(cashBillElement, { quality: 0.95, pixelRatio: 2 });
           const cbPdfBase64 = await convertImageToPdfBase64(cbBase64, "image/jpeg");
           const cbFileName = `${baseFileName}-บิลเงินสด`;
           const cbRes = await uploadToGoogleDrive(cbPdfBase64, folderId, cbFileName, date, "ร้านค้าไม่มีใบเสร็จ");

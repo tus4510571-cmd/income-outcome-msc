@@ -29,13 +29,11 @@ export default function CashBillGenerator({
       {/* Header: Shop Info */}
       <div className="flex justify-between items-start mb-8">
         <div className="w-1/3">
-          {/* Logo Placeholder */}
-          <div className="text-4xl font-black tracking-tighter">LOGO</div>
-          <div className="text-sm font-bold tracking-wider">Customer</div>
+          {/* Logo was here, left blank intentionally */}
         </div>
         <div className="w-2/3 text-right">
-          <h2 className="text-xl font-bold mb-1">{shopName || "ไม่ระบุชื่อร้าน"}</h2>
-          <p className="text-sm">{shopAddress || "ไม่ระบุที่อยู่"}</p>
+          {shopName && <h2 className="text-xl font-bold mb-1">{shopName}</h2>}
+          {shopAddress && <p className="text-sm">{shopAddress}</p>}
           {shopTaxId && <p className="text-sm mt-1">เลขประจำตัวผู้เสียภาษีอากร {shopTaxId}</p>}
         </div>
       </div>

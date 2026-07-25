@@ -294,7 +294,7 @@ export default function NewShopWithReceiptPage() {
               </p>
               <input 
                 type="file" 
-                accept="image/*" 
+                accept="application/pdf,image/jpeg,image/png,image/webp"
                 className="hidden" 
                 ref={scanInputRef}
                 onChange={handleScanReceipt}
@@ -410,7 +410,7 @@ export default function NewShopWithReceiptPage() {
                 <input
                   ref={slipInputRef}
                   type="file"
-                  accept="image/*"
+                  accept="application/pdf,image/jpeg,image/png,image/webp"
                   onChange={handleSlipChange}
                   className="hidden"
                 />

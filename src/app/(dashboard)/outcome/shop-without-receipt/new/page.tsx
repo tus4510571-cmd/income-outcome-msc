@@ -802,7 +802,13 @@ export default function NewShopWithoutReceiptPage() {
                     <div>
                       <p className="mb-2">ผู้จ่ายเงิน</p>
                       <div className="h-16 flex items-end justify-center mb-1">
-                        <img src="/api/drive-image?id=signature_payer" crossOrigin="anonymous" className="max-h-16 object-contain" alt="Payer Signature" />
+                        <img 
+                          src={payerName ? `/signature/${payerName}.png` : "/api/drive-image?id=signature_payer"} 
+                          onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = "/api/drive-image?id=signature_payer"; }}
+                          crossOrigin="anonymous" 
+                          className="max-h-16 object-contain" 
+                          alt="Payer Signature" 
+                        />
                       </div>
                       <p className="border-b inline-block px-4 pb-1 mb-2 whitespace-nowrap min-w-[150px]" style={{ borderColor: "#000000" }}>
                         {payerName ? `( ${payerName} )` : "\u00A0"}
@@ -813,7 +819,13 @@ export default function NewShopWithoutReceiptPage() {
                     <div>
                       <p className="mb-2">ผู้รับของ/บริการ</p>
                       <div className="h-16 flex items-end justify-center mb-1">
-                        <img src="/api/drive-image?id=signature_payer" crossOrigin="anonymous" className="max-h-16 object-contain" alt="Receiver Signature" />
+                        <img 
+                          src={receiverName ? `/signature/${receiverName}.png` : "/api/drive-image?id=signature_payer"} 
+                          onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = "/api/drive-image?id=signature_payer"; }}
+                          crossOrigin="anonymous" 
+                          className="max-h-16 object-contain" 
+                          alt="Receiver Signature" 
+                        />
                       </div>
                       <p className="border-b inline-block px-4 pb-1 mb-2 whitespace-nowrap min-w-[150px]" style={{ borderColor: "#000000" }}>
                         {receiverName ? `( ${receiverName} )` : "\u00A0"}
@@ -824,7 +836,13 @@ export default function NewShopWithoutReceiptPage() {
                     <div>
                       <p className="mb-2">ผู้อนุมัติ</p>
                       <div className="h-16 flex items-end justify-center mb-1">
-                        <img src="/api/drive-image?id=signature_approver" crossOrigin="anonymous" className="max-h-16 object-contain" alt="Approver Signature" />
+                        <img 
+                          src={approverName ? `/signature/${approverName}.png` : "/api/drive-image?id=signature_approver"} 
+                          onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = "/api/drive-image?id=signature_approver"; }}
+                          crossOrigin="anonymous" 
+                          className="max-h-16 object-contain" 
+                          alt="Approver Signature" 
+                        />
                       </div>
                       <p className="border-b inline-block px-4 pb-1 mb-2 whitespace-nowrap min-w-[150px]" style={{ borderColor: "#000000" }}>
                         {approverName ? `( ${approverName} )` : "\u00A0"}

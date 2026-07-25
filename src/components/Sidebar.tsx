@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { 
   FileText, 
   Link as LinkIcon, 
@@ -17,12 +17,16 @@ import {
 
 export default function Sidebar({ mobile, onClose }: { mobile?: boolean; onClose?: () => void }) {
   const pathname = usePathname();
+  const [mountedPath, setMountedPath] = useState(pathname);
 
   useEffect(() => {
-    if (mobile && onClose) {
-      onClose();
+    if (pathname !== mountedPath) {
+      setMountedPath(pathname);
+      if (mobile && onClose) {
+        onClose();
+      }
     }
-  }, [pathname]);
+  }, [pathname, mountedPath, mobile, onClose]);
 
   const isActive = (path: string) => {
     return pathname?.startsWith(path);

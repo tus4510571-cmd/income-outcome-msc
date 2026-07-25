@@ -32,7 +32,7 @@ export default async function BranchTransferDetailPage({
   return (
     <main className="min-h-screen p-4 md:p-8 bg-slate-50/50">
       <div className="max-w-2xl mx-auto">
-        <div className="mb-8 flex justify-between items-start">
+        <div className="flex justify-between items-start sticky top-0 z-10 bg-slate-50/90 backdrop-blur-md py-4 -mx-4 px-4 md:-mx-8 md:px-8 border-b border-slate-200/50 mb-8 shadow-sm">
           <div className="flex items-center gap-4">
             <Link 
               href="/income/branch-transfer" 

@@ -53,7 +53,7 @@ export default function EmployeeFileSection({
     <div className="space-y-4">
       <div className="card">
         <h2 className="text-lg font-semibold text-slate-800 mb-4">เอกสาร (3 ไฟล์)</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-4">
           {FILE_TYPES.map((ft) => (
             <div key={ft.type}>
               {renderFileBox(ft.type, ft.label)}

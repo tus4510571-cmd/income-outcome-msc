@@ -15,7 +15,7 @@ export default function DetailContent({ transaction }: DetailContentProps) {
     
     if (file) {
       return (
-        <div className="border-2 rounded-xl p-4 border-emerald-300 bg-emerald-50">
+        <div className="border-2 rounded-xl p-4 border-emerald-300 bg-emerald-50 mb-4">
           <p className="text-sm font-medium text-emerald-700 mb-2">{label}</p>
           <FileImage filePath={file.file_path} label={label} />
         </div>
@@ -23,7 +23,7 @@ export default function DetailContent({ transaction }: DetailContentProps) {
     }
 
     return (
-      <div className="border-2 rounded-xl p-4 border-slate-200">
+      <div className="border-2 rounded-xl p-4 border-slate-200 mb-4">
         <FileUpload
           transactionId={transaction.id}
           fileType={fileType}
@@ -33,6 +33,24 @@ export default function DetailContent({ transaction }: DetailContentProps) {
         />
       </div>
     );
+  };
+
+  const renderAttachments = () => {
+    const attachments = transaction.files?.filter((f) => f.file_type.startsWith("attachment_") || f.file_type === "business_card" || f.file_type === "cash_bill");
+    if (!attachments || attachments.length === 0) return null;
+
+    return attachments.map((file, idx) => {
+      let label = `เอกสารแนบ ${idx + 1}`;
+      if (file.file_type === "business_card") label = "นามบัตรร้านค้า";
+      if (file.file_type === "cash_bill") label = "บิลเงินสด";
+
+      return (
+        <div key={file.id} className="border-2 rounded-xl p-4 border-emerald-300 bg-emerald-50 mb-4">
+          <p className="text-sm font-medium text-emerald-700 mb-2">{label}</p>
+          <FileImage filePath={file.file_path} label={label} />
+        </div>
+      );
+    });
   };
 
   return (
@@ -49,10 +67,10 @@ export default function DetailContent({ transaction }: DetailContentProps) {
             <span>🖨️</span> พิมพ์ใบเสร็จ
           </a>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-4">
           {renderFileBox("transfer_slip", "สลิปการโอนเงิน")}
-          {renderFileBox("business_card", "นามบัตรร้านค้า")}
           {renderFileBox("receipt", "ใบรับรองแทนใบเสร็จ")}
+          {renderAttachments()}
         </div>
       </div>
 

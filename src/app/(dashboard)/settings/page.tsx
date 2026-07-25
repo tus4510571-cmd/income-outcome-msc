@@ -551,59 +551,7 @@ export default function SettingsPage() {
                 )}
               </div>
             </div>
-          </div>
-        )}
-
-        {/* Tab Content: ร้านค้ามีใบเสร็จ */}
-        {activeTab === "with-receipt" && (
-          <div className="space-y-6">
-            {/* Shopify Section */}
-            <div className="card border-t-4 border-green-500">
-              <h2 className="text-lg font-bold mb-1">Shopify Integration</h2>
-              <p className="text-sm text-slate-500 mb-4">
-                เชื่อมต่อ Shopify Admin API เพื่อดึงรูปภาพและชื่อสินค้าแบบมีใบเสร็จ
-              </p>
-              
-              <div className="space-y-4">
-                <div>
-                  <label className="label">Store Domain</label>
-                  <input
-                    type="text"
-                    value={shopifyDomain}
-                    onChange={(e) => setShopifyDomain(e.target.value)}
-                    className="input-field"
-                    placeholder="e.g. your-store.myshopify.com"
-                  />
-                </div>
-                
-                <div>
-                  <label className="label">Admin API Access Token</label>
-                  <input
-                    type="password"
-                    value={shopifyToken}
-                    onChange={(e) => setShopifyToken(e.target.value)}
-                    className="input-field"
-                    placeholder="shpat_..."
-                  />
-                </div>
-
-                <div className="pt-2">
-                  <button
-                    onClick={handleSaveShopify}
-                    disabled={saving || (!shopifyDomain && !shopifyToken)}
-                    className="btn-secondary w-full border-green-200 text-green-700 hover:bg-green-50"
-                  >
-                    {saving ? "กำลังบันทึก..." : "Save Shopify Settings"}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Tab Content: ร้านค้าไม่มีใบเสร็จ */}
-        {activeTab === "without-receipt" && (
-          <div className="space-y-6">
+            {/* My Company Section */}
             <div className="card border-t-4 border-amber-500">
               <h2 className="text-lg font-bold mb-1">ข้อมูลบริษัทของเรา (My Company)</h2>
               <p className="text-sm text-slate-500 mb-6">
@@ -674,6 +622,59 @@ export default function SettingsPage() {
                 </div>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* Tab Content: ร้านค้ามีใบเสร็จ */}
+        {activeTab === "with-receipt" && (
+          <div className="space-y-6">
+            {/* Shopify Section */}
+            <div className="card border-t-4 border-green-500">
+              <h2 className="text-lg font-bold mb-1">Shopify Integration</h2>
+              <p className="text-sm text-slate-500 mb-4">
+                เชื่อมต่อ Shopify Admin API เพื่อดึงรูปภาพและชื่อสินค้าแบบมีใบเสร็จ
+              </p>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="label">Store Domain</label>
+                  <input
+                    type="text"
+                    value={shopifyDomain}
+                    onChange={(e) => setShopifyDomain(e.target.value)}
+                    className="input-field"
+                    placeholder="e.g. your-store.myshopify.com"
+                  />
+                </div>
+                
+                <div>
+                  <label className="label">Admin API Access Token</label>
+                  <input
+                    type="password"
+                    value={shopifyToken}
+                    onChange={(e) => setShopifyToken(e.target.value)}
+                    className="input-field"
+                    placeholder="shpat_..."
+                  />
+                </div>
+
+                <div className="pt-2">
+                  <button
+                    onClick={handleSaveShopify}
+                    disabled={saving || (!shopifyDomain && !shopifyToken)}
+                    className="btn-secondary w-full border-green-200 text-green-700 hover:bg-green-50"
+                  >
+                    {saving ? "กำลังบันทึก..." : "Save Shopify Settings"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Tab Content: ร้านค้าไม่มีใบเสร็จ */}
+        {activeTab === "without-receipt" && (
+          <div className="space-y-6">
 
             <div className="card border-t-4 border-amber-500">
               <h2 className="text-lg font-bold mb-1">การตั้งค่าใบรับรองแทนใบเสร็จรับเงิน</h2>

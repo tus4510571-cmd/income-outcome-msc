@@ -91,6 +91,8 @@ CREATE TABLE expense_details (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   transaction_id UUID NOT NULL UNIQUE REFERENCES transactions(id) ON DELETE CASCADE,
   shop_name TEXT,
+  shop_address TEXT,
+  shop_tax_id TEXT,
   employee_name TEXT
 );
 

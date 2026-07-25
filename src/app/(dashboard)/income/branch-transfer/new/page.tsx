@@ -148,9 +148,14 @@ export default function NewBranchTransferPage() {
 
       // Upload merged PDF to Drive
       const res = await uploadToGoogleDrive(mergedPdfBase64, folderId, customFileName, date, "โอนเงินจากสาขา");
+      
+      if (!res.success) {
+        throw new Error(res.error || "Failed to upload to Google Drive");
+      }
+      
       setUploadProgress(60);
 
-      // Create Transaction
+      // Create Transaction only if upload succeeds
       const transaction = await createTransaction({
         type: "income",
         category: "branch_transfer",
@@ -162,8 +167,6 @@ export default function NewBranchTransferPage() {
       });
       setUploadProgress(80);
 
-      if (!res.success) throw new Error(res.error || "Failed to upload to Google Drive");
-      
       if (res.link) {
         await saveGoogleDriveFileLink(transaction.id, "receipt", res.link, `${customFileName}.pdf`);
       }

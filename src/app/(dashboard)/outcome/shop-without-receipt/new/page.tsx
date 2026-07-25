@@ -289,17 +289,7 @@ export default function NewShopWithoutReceiptPage() {
         throw new Error("ยังไม่ได้ตั้งค่า Google Drive สำหรับ Outcome ในหน้า Setting");
       }
 
-      const transaction = await createTransaction({
-        type: "outcome",
-        category: "shop_without_receipt",
-        description,
-        amount: parseFloat(amount) || 0,
-        currency: "THB",
-        transaction_date: date,
-        shop_name: shopName,
-      });
-      setTransactionId(transaction.id);
-      updateTask("db", { status: "success" });
+      // Transaction creation moved to the end of the try block
 
       const receiptElement = document.getElementById("receipt-capture");
       if (!receiptElement) throw new Error("Receipt template not found");
@@ -324,6 +314,8 @@ export default function NewShopWithoutReceiptPage() {
       const driveMonthStr = `${String(dateObj.getMonth() + 1).padStart(2, '0')} ${months[dateObj.getMonth()]}`;
       const drivePathPrefix = `${yyyy} > ${driveMonthStr} > ร้านค้าไม่มีใบเสร็จ`;
 
+      const uploadedFiles: { type: string; link: string; name: string; path: string }[] = [];
+
       if (scannedFiles.length > 0) {
         updateTask("card", { status: "uploading" });
         try {
@@ -338,7 +330,7 @@ export default function NewShopWithoutReceiptPage() {
             const name = scannedFiles.length > 1 ? `${baseFileName}-แนบ-${i+1}` : `${baseFileName}-แนบ`;
             const res = await uploadToGoogleDrive(pdfBase64, folderId, name, date, "ร้านค้าไม่มีใบเสร็จ");
             if (!res.success) throw new Error(res.error || `Failed to upload attached file ${i+1}`);
-            if (res.link) await saveGoogleDriveFileLink(transaction.id, `attachment_${i+1}`, res.link, name);
+            uploadedFiles.push({ type: `attachment_${i+1}`, link: res.link, name, path: `${drivePathPrefix} > ${name}.pdf` });
             if (i === 0) updateTask("card", { status: "success", link: res.link, path: `${drivePathPrefix} > ${name}.pdf` });
           }
         } catch (e) {
@@ -354,7 +346,7 @@ export default function NewShopWithoutReceiptPage() {
           const slipFileName = `${baseFileName}-slip`;
           const res = await uploadToGoogleDrive(pdfBase64, folderId, slipFileName, date, "ร้านค้าไม่มีใบเสร็จ");
           if (!res.success) throw new Error(res.error || "Failed to upload slip to Drive");
-          if (res.link) await saveGoogleDriveFileLink(transaction.id, "transfer_slip", res.link, slipFileName);
+          uploadedFiles.push({ type: "transfer_slip", link: res.link, name: slipFileName, path: `${drivePathPrefix} > ${slipFileName}.pdf` });
           updateTask("slip", { status: "success", link: res.link, path: `${drivePathPrefix} > ${slipFileName}.pdf` });
         } catch (e) {
           updateTask("slip", { status: "error", error: (e as Error).message });
@@ -373,7 +365,7 @@ export default function NewShopWithoutReceiptPage() {
           const cbFileName = `${baseFileName}-บิลเงินสด`;
           const cbRes = await uploadToGoogleDrive(cbPdfBase64, folderId, cbFileName, date, "ร้านค้าไม่มีใบเสร็จ");
           if (!cbRes.success) throw new Error(cbRes.error || "Failed to upload cash bill to Drive");
-          if (cbRes.link) await saveGoogleDriveFileLink(transaction.id, "cash_bill", cbRes.link, cbFileName);
+          uploadedFiles.push({ type: "cash_bill", link: cbRes.link, name: cbFileName, path: `${drivePathPrefix} > ${cbFileName}.pdf` });
           updateTask("cashbill", { status: "success", link: cbRes.link, path: `${drivePathPrefix} > ${cbFileName}.pdf` });
         } catch (e) {
           updateTask("cashbill", { status: "error", error: (e as Error).message });
@@ -387,11 +379,30 @@ export default function NewShopWithoutReceiptPage() {
         const receiptFileName = `${baseFileName}-ใบรับรองแทนใบเสร็จรับเงิน`;
         const res = await uploadToGoogleDrive(pdfReceiptBase64, folderId, receiptFileName, date, "ร้านค้าไม่มีใบเสร็จ");
         if (!res.success) throw new Error(res.error || "Failed to upload generated receipt to Drive");
-        if (res.link) await saveGoogleDriveFileLink(transaction.id, "receipt", res.link, receiptFileName);
+        uploadedFiles.push({ type: "receipt", link: res.link, name: receiptFileName, path: `${drivePathPrefix} > ${receiptFileName}.pdf` });
         updateTask("receipt", { status: "success", link: res.link, path: `${drivePathPrefix} > ${receiptFileName}.pdf` });
       } catch (e) {
         updateTask("receipt", { status: "error", error: (e as Error).message });
         throw e;
+      }
+
+      // 2. Create Transaction and Database Records ONLY if all uploads succeeded
+      updateTask("db", { status: "uploading" });
+      const transaction = await createTransaction({
+        type: "outcome",
+        category: "shop_without_receipt",
+        description,
+        amount: parseFloat(amount) || 0,
+        currency: items[0]?.currency || "THB",
+        transaction_date: date,
+        shop_name: shopName,
+        shop_address: shopAddress,
+        shop_tax_id: shopTaxId,
+      });
+      setTransactionId(transaction.id);
+
+      for (const uf of uploadedFiles) {
+        await saveGoogleDriveFileLink(transaction.id, uf.type, uf.link, uf.name);
       }
 
       await addReceiptItems(
@@ -403,6 +414,7 @@ export default function NewShopWithoutReceiptPage() {
           currency: item.currency || "THB",
         }))
       );
+      updateTask("db", { status: "success" });
 
       setUploadStatus("complete");
       // ไม่ทำการ redirect อัตโนมัติ เพื่อให้ผู้ใช้กดลิงก์ดูไฟล์ได้

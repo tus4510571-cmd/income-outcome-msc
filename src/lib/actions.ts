@@ -12,7 +12,7 @@ async function getAuthUser() {
 export async function signIn(email: string, password: string) {
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) throw error;
+  if (error) throw new Error(error.message);
   if (!data.session) throw new Error("เข้าสู่ระบบไม่สำเร็จ");
   return { success: true };
 }
@@ -24,7 +24,7 @@ export async function signUp(email: string, password: string, fullName: string) 
     password,
     options: { data: { full_name: fullName } },
   });
-  if (error) throw error;
+  if (error) throw new Error(error.message);
   return { success: true };
 }
 
@@ -68,7 +68,7 @@ export async function createTransaction(formData: {
     .select()
     .single();
 
-  if (txError) throw txError;
+  if (txError) throw new Error(txError.message);
 
   if (formData.type === "outcome") {
     await supabase.from("expense_details").insert({
@@ -155,7 +155,7 @@ export async function uploadFile(
     .from("transaction-files")
     .upload(filePath, blob);
 
-  if (uploadError) throw uploadError;
+  if (uploadError) throw new Error(uploadError.message);
 
   const { error: dbError } = await supabase.from("transaction_files").insert({
     transaction_id: transactionId,
@@ -165,7 +165,7 @@ export async function uploadFile(
     file_size: blob.size,
   });
   
-  if (dbError) throw dbError;
+  if (dbError) throw new Error(dbError.message);
 
   return { filePath, fileName };
 }
@@ -264,7 +264,7 @@ export async function deleteTransaction(id: string) {
     .eq("id", id)
     .eq("user_id", user.id);
 
-  if (error) throw error;
+  if (error) throw new Error(error.message);
   return { success: true };
 }
 
@@ -302,7 +302,7 @@ export async function updateTransaction(
     .eq("id", id)
     .eq("user_id", user.id);
 
-  if (txError) throw txError;
+  if (txError) throw new Error(txError.message);
 
   const { data: tx } = await supabase.from("transactions").select("type").eq("id", id).single();
   
@@ -392,7 +392,7 @@ export async function setSetting(key: string, value: string) {
       { onConflict: "user_id,key" }
     );
 
-  if (error) throw error;
+  if (error) throw new Error(error.message);
   return { success: true };
 }
 

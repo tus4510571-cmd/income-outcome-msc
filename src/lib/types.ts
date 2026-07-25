@@ -21,7 +21,9 @@ export type FileType =
   | "receipt"
   | "business_card"
   | "id_card_copy"
-  | "employee_receipt";
+  | "employee_receipt"
+  | "cash_bill"
+  | (string & {});
 
 export interface Transaction {
   id: string;

@@ -25,7 +25,7 @@ export async function GET(request: Request) {
       driveId = settingId;
     }
 
-    const webAppUrl = await getSetting("google_drive_web_app_url");
+    const webAppUrl = await getSetting("google_apps_script_url");
     if (!webAppUrl) {
       throw new Error("Google Drive Web App URL is not configured");
     }

@@ -10,7 +10,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    const webAppUrl = await getSetting("google_drive_web_app_url");
+    const webAppUrl = await getSetting("google_apps_script_url");
     if (!webAppUrl) {
       return new NextResponse(JSON.stringify({ error: "Web App URL not configured" }), { status: 500 });
     }

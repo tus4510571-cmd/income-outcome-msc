@@ -76,6 +76,8 @@ export default function NewShopWithoutReceiptPage() {
     path?: string;
     error?: string;
   };
+  type DriveFile = { id: string; name: string; mimeType: string };
+  const [signatureFiles, setSignatureFiles] = useState<DriveFile[]>([]);
   const [uploadTasks, setUploadTasks] = useState<UploadTask[]>([]);
 
   const router = useRouter();
@@ -111,6 +113,23 @@ export default function NewShopWithoutReceiptPage() {
       if (cAddress) setCompanyAddress(cAddress);
       const cTaxId = await getSetting("company_tax_id");
       if (cTaxId) setCompanyTaxId(cTaxId);
+      
+      const sigFolderId = await getSetting("signature_folder_id");
+      if (sigFolderId) {
+        try {
+          const res = await fetch(`/api/drive-list?folderId=${sigFolderId}`);
+          if (res.ok) {
+            const data = await res.json();
+            if (data.files) {
+              setSignatureFiles(data.files);
+              const driveNames = data.files.map((f: DriveFile) => f.name.replace(/\.[^/.]+$/, ""));
+              setSavedNames(prev => Array.from(new Set([...prev, ...driveNames])));
+            }
+          }
+        } catch (e) {
+          console.error("Failed to fetch signature files", e);
+        }
+      }
     }
     initData();
   }, [date]);
@@ -147,6 +166,18 @@ export default function NewShopWithoutReceiptPage() {
     setIsAddingPosition(false);
     
     await setSetting("saved_employee_positions", JSON.stringify(updatedList));
+  };
+
+  const getSignatureUrl = (name: string, fallbackId: string) => {
+    if (!name || signatureFiles.length === 0) return `/api/drive-image?id=${fallbackId}`;
+    
+    // Find file in drive matching the name
+    const file = signatureFiles.find(f => f.name.toLowerCase().startsWith(name.toLowerCase()));
+    if (file) {
+      return `/api/drive-image?id=${file.id}`;
+    }
+    
+    return `/api/drive-image?id=${fallbackId}`;
   };
 
   const handleCardChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -802,7 +833,7 @@ export default function NewShopWithoutReceiptPage() {
                     <div>
                       <p className="mb-2">ผู้จ่ายเงิน</p>
                       <div className="h-16 flex items-end justify-center mb-1">
-                        <img src="/api/drive-image?id=signature_payer" crossOrigin="anonymous" className="max-h-16 object-contain" alt="Payer Signature" />
+                        <img src={getSignatureUrl(payerName, "signature_payer")} crossOrigin="anonymous" className="max-h-16 object-contain" alt="Payer Signature" />
                       </div>
                       <p className="border-b inline-block px-4 pb-1 mb-2 whitespace-nowrap min-w-[150px]" style={{ borderColor: "#000000" }}>
                         {payerName ? `( ${payerName} )` : "\u00A0"}
@@ -813,7 +844,7 @@ export default function NewShopWithoutReceiptPage() {
                     <div>
                       <p className="mb-2">ผู้รับของ/บริการ</p>
                       <div className="h-16 flex items-end justify-center mb-1">
-                        <img src="/api/drive-image?id=signature_payer" crossOrigin="anonymous" className="max-h-16 object-contain" alt="Receiver Signature" />
+                        <img src={getSignatureUrl(receiverName, "signature_payer")} crossOrigin="anonymous" className="max-h-16 object-contain" alt="Receiver Signature" />
                       </div>
                       <p className="border-b inline-block px-4 pb-1 mb-2 whitespace-nowrap min-w-[150px]" style={{ borderColor: "#000000" }}>
                         {receiverName ? `( ${receiverName} )` : "\u00A0"}
@@ -824,7 +855,7 @@ export default function NewShopWithoutReceiptPage() {
                     <div>
                       <p className="mb-2">ผู้อนุมัติ</p>
                       <div className="h-16 flex items-end justify-center mb-1">
-                        <img src="/api/drive-image?id=signature_approver" crossOrigin="anonymous" className="max-h-16 object-contain" alt="Approver Signature" />
+                        <img src={getSignatureUrl(approverName, "signature_approver")} crossOrigin="anonymous" className="max-h-16 object-contain" alt="Approver Signature" />
                       </div>
                       <p className="border-b inline-block px-4 pb-1 mb-2 whitespace-nowrap min-w-[150px]" style={{ borderColor: "#000000" }}>
                         {approverName ? `( ${approverName} )` : "\u00A0"}

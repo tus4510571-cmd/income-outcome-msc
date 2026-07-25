@@ -49,12 +49,11 @@ export default function SummaryPage() {
 
   const isComplete = (t: TransactionWithDetails) => {
     if (t.category === "shop_without_receipt") {
-      const hasCard = t.files?.some(f => f.file_type === "business_card");
+      const hasAttachment = t.files?.some(f => f.file_type === "business_card" || f.file_type.startsWith("attachment_"));
       const hasReceipt = t.files?.some(f => f.file_type === "receipt");
       const hasSlip = t.files?.some(f => f.file_type === "transfer_slip");
       
-      if (hasCard && hasReceipt && hasSlip) return true; // 3 files
-      if (hasCard && hasReceipt && !hasSlip) return true; // Cash payment (2 files)
+      if (hasAttachment && hasReceipt) return true;
       return false;
     }
 

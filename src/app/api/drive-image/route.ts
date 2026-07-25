@@ -46,7 +46,7 @@ export async function GET(request: Request) {
     const headers = new Headers();
     headers.set("Content-Type", data.mimeType || "image/png");
     headers.set("Cache-Control", "public, max-age=3600");
-    // Enable CORS for html2canvas
+    // Enable CORS for html-to-image
     headers.set("Access-Control-Allow-Origin", "*");
 
     return new NextResponse(buffer, {

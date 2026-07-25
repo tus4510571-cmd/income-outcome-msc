@@ -250,7 +250,7 @@ export default function SettingsPage() {
   if (!mounted) return null;
 
   return (
-    <main className="min-h-screen p-4 md:p-8">
+    <main className="min-h-screen p-4 md:p-8 bg-slate-50/50">
       <div className="max-w-4xl mx-auto">
         <div className="flex items-center justify-between mb-8">
           <div>

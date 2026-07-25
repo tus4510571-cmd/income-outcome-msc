@@ -56,7 +56,7 @@ export default function OutcomeDashboard() {
   };
 
   return (
-    <main className="min-h-screen p-4 md:p-8">
+    <main className="min-h-screen p-4 md:p-8 bg-slate-50/50">
       <div className="max-w-4xl mx-auto">
         <div className="mb-8">
           <Link href="/" className="text-sm text-slate-500 hover:text-indigo-600 mb-2 inline-block">

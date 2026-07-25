@@ -260,7 +260,7 @@ export default function NewShopWithReceiptPage() {
   const canSubmit = items.length > 0 && shopName && amount && (paidWithCash || slipPreview) && receiptPreview && (!requireIdCard || idCardPreview);
 
   return (
-    <main className="min-h-screen p-4 md:p-8 pb-24">
+    <main className="min-h-screen p-4 md:p-8 pb-24 bg-slate-50/50">
       {uploadStatus !== "idle" && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm">
           <div className="bg-white dark:bg-slate-800 p-8 rounded-2xl shadow-xl max-w-md w-full mx-4">

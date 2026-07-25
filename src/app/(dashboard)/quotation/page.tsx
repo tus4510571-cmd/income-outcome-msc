@@ -11,7 +11,7 @@ export default async function QuotationPage() {
   const quotations: any[] = [];
 
   return (
-    <main className="min-h-screen p-4 md:p-8">
+    <main className="min-h-screen p-4 md:p-8 bg-slate-50/50">
       <div className="max-w-5xl mx-auto">
         <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>

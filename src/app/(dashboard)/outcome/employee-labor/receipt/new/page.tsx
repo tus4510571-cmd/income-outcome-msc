@@ -149,7 +149,7 @@ export default function CreateEmployeeReceiptPage() {
   };
 
   return (
-    <main className="min-h-screen p-4 md:p-8">
+    <main className="min-h-screen p-4 md:p-8 bg-slate-50/50">
       {/* Hide this section when printing */}
       <div className="max-w-4xl mx-auto print:hidden">
         <div className="mb-6">

@@ -134,7 +134,7 @@ export default function NewChatDirectPage() {
   };
 
   return (
-    <main className="min-h-screen p-4 md:p-8">
+    <main className="min-h-screen p-4 md:p-8 bg-slate-50/50">
       <div className="max-w-3xl mx-auto">
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-slate-800">สร้างรายการใหม่</h1>

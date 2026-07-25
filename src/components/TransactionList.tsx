@@ -39,163 +39,148 @@ export default function TransactionList({ transactions, baseHref, showFiles = fa
   }
 
   return (
-    <div className="bg-white rounded-3xl border border-slate-100 overflow-hidden shadow-sm">
-      <div className="overflow-x-auto">
-        <table className="w-full text-left border-collapse min-w-[600px]">
-          <thead>
-            <tr className="border-b border-slate-100">
-              <th className="py-4 px-6 text-xs font-semibold text-slate-400 uppercase tracking-wider">Date</th>
-              <th className="py-4 px-6 text-xs font-semibold text-slate-400 uppercase tracking-wider">Description</th>
-              <th className="py-4 px-6 text-xs font-semibold text-slate-400 uppercase tracking-wider text-right">Amount</th>
-              <th className="py-4 px-6 text-xs font-semibold text-slate-400 uppercase tracking-wider text-right">Category</th>
-              {showFiles && (
-                <th className="py-4 px-6 text-xs font-semibold text-slate-400 uppercase tracking-wider text-right">Files</th>
-              )}
-              <th className="py-4 px-6"></th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-50">
-            {transactions.map((t) => {
-              const isIncome = t.type === "income";
+    <div className="flex flex-col gap-3">
+      {transactions.map((t) => {
+        const isIncome = t.type === "income";
 
-              const getCategoryLabel = () => {
-                if (isIncome) {
-                  switch (t.category) {
-                    case "payment_link": return "Payment Link";
-                    case "chat_direct": return "Chat / Social";
-                    case "branch_transfer": return "โอนเข้าจากสาขา";
-                    default: return t.category;
-                  }
-                } else {
-                  switch (t.category) {
-                    case "shop_with_receipt": return "ร้านค้าที่มีใบเสร็จ";
-                    case "shop_without_receipt": return "ร้านค้าไม่มีใบเสร็จ";
-                    case "employee_labor": return "ค่าจ้างพนักงาน";
-                    default: return t.category;
-                  }
-                }
-              };
+        const getCategoryLabel = () => {
+          if (isIncome) {
+            switch (t.category) {
+              case "payment_link": return "Payment Link";
+              case "chat_direct": return "Chat / Social";
+              case "branch_transfer": return "โอนเข้าจากสาขา";
+              default: return t.category;
+            }
+          } else {
+            switch (t.category) {
+              case "shop_with_receipt": return "ร้านค้าที่มีใบเสร็จ";
+              case "shop_without_receipt": return "ร้านค้าไม่มีใบเสร็จ";
+              case "employee_labor": return "ค่าจ้างพนักงาน";
+              default: return t.category;
+            }
+          }
+        };
 
-              const getDetailName = () => {
-                if (isIncome) return t.income_detail?.customer_name;
-                return t.expense_detail?.shop_name || t.expense_detail?.employee_name;
-              };
+        const getDetailName = () => {
+          if (isIncome) return t.income_detail?.customer_name;
+          return t.expense_detail?.shop_name || t.expense_detail?.employee_name;
+        };
 
-              const getStatusElement = () => {
-                const reqCount = getRequiredCount(t);
-                const uploadedCount = t.files?.length || 0;
-                
-                if (uploadedCount >= reqCount && reqCount > 0) {
-                  return <span className="text-slate-400">{t.description || "Completed"} ({uploadedCount}/{reqCount})</span>;
-                }
+        const getStatusElement = () => {
+          const reqCount = getRequiredCount(t);
+          const uploadedCount = t.files?.length || 0;
+          
+          if (uploadedCount >= reqCount && reqCount > 0) {
+            return <span className="text-emerald-600 font-medium">{t.description || "Completed"}</span>;
+          }
 
-                if (reqCount === 0) {
-                   return <span className="text-slate-400">{t.description || "Completed"} (No Files Required)</span>;
-                }
+          if (reqCount === 0) {
+             return <span className="text-emerald-600 font-medium">{t.description || "Completed"}</span>;
+          }
 
-                const uploadedTypes = t.files?.map(f => f.file_type) || [];
-                const missing: string[] = [];
+          const uploadedTypes = t.files?.map(f => f.file_type) || [];
+          const missing: string[] = [];
 
-                const checkMissing = (type: string, name: string) => {
-                  if (!uploadedTypes.includes(type as any)) missing.push(name);
-                };
+          const checkMissing = (type: string, name: string) => {
+            if (!uploadedTypes.includes(type as any)) missing.push(name);
+          };
 
-                if (t.category === "shop_without_receipt") {
-                  checkMissing("business_card", "นามบัตร");
-                  checkMissing("receipt", "ใบรับรองฯ");
-                  // Only require slip if they didn't specify cash payment
-                  if (reqCount === 3) checkMissing("transfer_slip", "สลิปโอนเงิน");
-                } else if (t.category === "shop_with_receipt") {
-                  checkMissing("transfer_slip", "สลิปโอนเงิน");
-                  checkMissing("receipt", "ใบเสร็จ");
-                  if (t.description?.includes("[REQ_ID]")) {
-                    checkMissing("id_card_copy", "สำเนาบัตรฯ");
-                  }
-                } else if (t.category === "employee_labor") {
-                  checkMissing("transfer_slip", "สลิปโอนเงิน");
-                  checkMissing("id_card_copy", "สำเนาบัตรฯ");
-                  checkMissing("employee_receipt", "ใบสำคัญรับเงิน");
-                } else if (t.type === "income") {
-                  checkMissing("receipt", "หลักฐาน");
-                }
+          if (t.category === "shop_without_receipt") {
+            checkMissing("business_card", "นามบัตร");
+            checkMissing("receipt", "ใบรับรองฯ");
+            if (reqCount === 3) checkMissing("transfer_slip", "สลิปโอนเงิน");
+          } else if (t.category === "shop_with_receipt") {
+            checkMissing("transfer_slip", "สลิปโอนเงิน");
+            checkMissing("receipt", "ใบเสร็จ");
+            if (t.description?.includes("[REQ_ID]")) {
+              checkMissing("id_card_copy", "สำเนาบัตรฯ");
+            }
+          } else if (t.category === "employee_labor") {
+            checkMissing("transfer_slip", "สลิปโอนเงิน");
+            checkMissing("id_card_copy", "สำเนาบัตรฯ");
+            checkMissing("employee_receipt", "ใบสำคัญรับเงิน");
+          } else if (t.type === "income") {
+            checkMissing("receipt", "หลักฐาน");
+          }
 
-                return (
-                  <span className="text-red-500 font-medium">
-                    Incomplete ({uploadedCount}/{reqCount} ขาด: {missing.join(", ")})
+          return (
+            <span className="text-rose-500 font-medium">
+              ขาด: {missing.join(", ")}
+            </span>
+          );
+        };
+
+        const targetHref = baseHref 
+          ? `${baseHref}/${t.id}` 
+          : (isIncome ? `/income/${t.category.replace(/_/g, "-")}/${t.id}` : `/outcome/${t.category.replace(/_/g, "-")}/${t.id}`);
+
+        return (
+          <Link 
+            key={t.id} 
+            href={targetHref}
+            className="group block bg-white rounded-2xl p-4 md:p-5 border border-slate-100 shadow-sm hover:shadow-md hover:border-indigo-100 transition-all duration-200"
+          >
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              
+              <div className="flex items-start gap-4">
+                <div className={`mt-1 flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg ${
+                  isIncome ? "bg-emerald-100 text-emerald-600" : "bg-rose-100 text-rose-600"
+                }`}>
+                  {isIncome ? "+" : "-"}
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-base md:text-lg font-bold text-slate-800 line-clamp-1 group-hover:text-indigo-600 transition-colors">
+                    {getDetailName() || getCategoryLabel()}
                   </span>
-                );
-              };
-
-              return (
-                <tr key={t.id} className="group hover:bg-slate-50/50 transition-colors">
-                  <td className="py-4 px-6 text-sm text-slate-500 whitespace-nowrap">
-                    {formatDate(t.transaction_date).split(" ")[0]} {formatDate(t.transaction_date).split(" ")[1]}
-                  </td>
-                  <td className="py-4 px-6">
-                    <div className="flex flex-col">
-                      <span className="text-sm font-bold text-slate-700 truncate max-w-[200px] md:max-w-[300px]">
-                        {getDetailName() || getCategoryLabel()}
-                      </span>
-                      <span className="text-xs truncate max-w-[200px] md:max-w-[300px]">
-                        {getStatusElement()}
-                      </span>
-                    </div>
-                  </td>
-                  <td className="py-4 px-6 text-right whitespace-nowrap">
-                    {isIncome ? (
-                      <span className="inline-flex px-3 py-1 rounded-lg text-xs font-bold bg-emerald-100/80 text-emerald-700">
-                        {formatCurrency(t.amount, t.currency)} {t.currency}
-                      </span>
-                    ) : (
-                      <span className="text-sm font-bold text-slate-600">
-                        -{formatCurrency(t.amount, t.currency)} {t.currency}
-                      </span>
-                    )}
-                  </td>
-                  <td className="py-4 px-6 text-right whitespace-nowrap">
-                    <span className="text-sm text-slate-500">
-                      {getCategoryLabel()}
+                  <div className="flex items-center gap-2 mt-1 flex-wrap">
+                    <span className="text-xs font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
+                      {formatDate(t.transaction_date).split(" ")[0]} {formatDate(t.transaction_date).split(" ")[1]}
                     </span>
-                  </td>
-                  {showFiles && (
-                    <td className="py-4 px-6 text-right whitespace-nowrap">
-                      <div className="flex items-center justify-end gap-2">
-                        <div className="flex flex-col items-end gap-1">
-                          <div className="flex items-center gap-2">
-                            <div className="flex gap-1">
-                              {Array.from({ length: getRequiredCount(t) }).map((_, i) => (
-                                <span
-                                  key={i}
-                                  className={`w-2.5 h-2.5 rounded-full ${
-                                    i < (t.files?.length || 0) ? (isIncome ? "bg-emerald-400" : "bg-emerald-400") : "bg-red-300"
-                                  }`}
-                                />
-                              ))}
-                            </div>
-                            <span className="text-xs text-slate-400 w-8 text-right">
-                              {t.files?.length || 0}/{getRequiredCount(t)}
-                            </span>
-                          </div>
-                          {t.category === "shop_without_receipt" && getRequiredCount(t) === 2 && (t.files?.length === 2) && (
-                            <span className="text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded whitespace-nowrap">จ่ายเงินสด</span>
-                          )}
-                        </div>
-                      </div>
-                    </td>
+                    <span className="text-xs text-slate-400">•</span>
+                    <span className="text-xs text-slate-500">{getCategoryLabel()}</span>
+                    <span className="text-xs text-slate-400">•</span>
+                    <span className="text-xs">{getStatusElement()}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between md:flex-col md:items-end gap-2 pl-14 md:pl-0">
+                <div className="text-right">
+                  {isIncome ? (
+                    <span className="text-lg font-black text-emerald-600">
+                      +{formatCurrency(t.amount, t.currency)} {t.currency}
+                    </span>
+                  ) : (
+                    <span className="text-lg font-black text-slate-700">
+                      -{formatCurrency(t.amount, t.currency)} {t.currency}
+                    </span>
                   )}
-                  <td className="py-4 px-4 text-right">
-                    <Link href={baseHref ? `${baseHref}/${t.id}` : (isIncome ? `/income/${t.category.replace(/_/g, "-")}/${t.id}` : `/outcome/${t.category.replace(/_/g, "-")}/${t.id}`)} className="inline-block p-2 text-slate-300 hover:text-slate-600 transition-colors rounded-full hover:bg-slate-100">
-                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
-                    </Link>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+                </div>
+                
+                {showFiles && (
+                  <div className="flex items-center gap-1.5 opacity-80 group-hover:opacity-100 transition-opacity">
+                    {Array.from({ length: getRequiredCount(t) }).map((_, i) => (
+                      <span
+                        key={i}
+                        className={`w-2 h-2 rounded-full ${
+                          i < (t.files?.length || 0) ? "bg-emerald-500" : "bg-slate-200"
+                        }`}
+                      />
+                    ))}
+                    <span className="text-[10px] text-slate-400 ml-1 font-medium">
+                      {t.files?.length || 0}/{getRequiredCount(t)}
+                    </span>
+                    {t.category === "shop_without_receipt" && getRequiredCount(t) === 2 && (t.files?.length === 2) && (
+                      <span className="text-[9px] bg-amber-50 text-amber-600 px-1.5 py-0.5 rounded font-bold ml-1 border border-amber-100">CASH</span>
+                    )}
+                  </div>
+                )}
+              </div>
+
+            </div>
+          </Link>
+        );
+      })}
     </div>
   );
 }

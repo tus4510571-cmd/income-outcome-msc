@@ -186,7 +186,7 @@ export default function NewBranchTransferPage() {
   };
 
   return (
-    <main className="min-h-screen p-4 md:p-8">
+    <main className="min-h-screen p-4 md:p-8 bg-slate-50/50">
       {/* Modal Progress Overlay */}
       {uploadStatus !== "idle" && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm">

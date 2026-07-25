@@ -50,6 +50,7 @@ export default async function ShopWithReceiptDetailPage({
           transactionId={transaction.id}
           transactionDate={transaction.transaction_date}
           existingFiles={transaction.files || []}
+          description={transaction.description}
         />
       </div>
     </main>

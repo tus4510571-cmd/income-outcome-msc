@@ -55,8 +55,16 @@ export default function SummaryPage() {
     }
     
     if (t.category === "shop_with_receipt") {
+      const hasSlip = t.files?.some(f => f.file_type === "transfer_slip");
       const hasReceipt = t.files?.some(f => f.file_type === "receipt");
-      return !!hasReceipt;
+      const hasIdCard = t.files?.some(f => f.file_type === "id_card_copy");
+      
+      let complete = hasSlip && hasReceipt;
+      
+      if (t.description?.includes("[REQ_ID]")) {
+        complete = complete && hasIdCard;
+      }
+      return !!complete;
     }
     
     if (t.category === "employee_labor") {

@@ -20,11 +20,15 @@ export default function TransactionList({ transactions, baseHref, showFiles = fa
       if (hasCard && hasReceipt && !hasSlip) return 2; // Cash payment
       return 3; // Bank transfer
     }
-    const REQUIRED_FILES: Record<string, string[]> = {
-      shop_with_receipt: ["transfer_slip", "receipt"],
-      employee_labor: ["transfer_slip", "id_card_copy", "employee_receipt"],
-    };
-    return REQUIRED_FILES[t.category]?.length || 0;
+    
+    if (t.category === "shop_with_receipt") {
+      let count = 2; // transfer_slip, receipt
+      if (t.description?.includes("[REQ_ID]")) count += 1;
+      return count;
+    }
+    
+    if (t.category === "employee_labor") return 3; // transfer_slip, id_card_copy, employee_receipt
+    return 0;
   };
   if (!transactions || transactions.length === 0) {
     return (
@@ -104,6 +108,9 @@ export default function TransactionList({ transactions, baseHref, showFiles = fa
                 } else if (t.category === "shop_with_receipt") {
                   checkMissing("transfer_slip", "สลิปโอนเงิน");
                   checkMissing("receipt", "ใบเสร็จ");
+                  if (t.description?.includes("[REQ_ID]")) {
+                    checkMissing("id_card_copy", "สำเนาบัตรฯ");
+                  }
                 } else if (t.category === "employee_labor") {
                   checkMissing("transfer_slip", "สลิปโอนเงิน");
                   checkMissing("id_card_copy", "สำเนาบัตรฯ");

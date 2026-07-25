@@ -29,6 +29,11 @@ export default function NewShopWithReceiptPage() {
   const [slipFile, setSlipFile] = useState<File | null>(null);
   const slipInputRef = useRef<HTMLInputElement>(null);
 
+  const [requireIdCard, setRequireIdCard] = useState(false);
+  const [idCardPreview, setIdCardPreview] = useState<string | null>(null);
+  const [idCardFile, setIdCardFile] = useState<File | null>(null);
+  const idCardInputRef = useRef<HTMLInputElement>(null);
+
   // System States
   const [isScanning, setIsScanning] = useState(false);
   const [scanError, setScanError] = useState("");
@@ -116,6 +121,15 @@ export default function NewShopWithReceiptPage() {
     reader.readAsDataURL(file);
   };
 
+  const handleIdCardChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIdCardFile(file);
+    const reader = new FileReader();
+    reader.onload = () => setIdCardPreview(reader.result as string);
+    reader.readAsDataURL(file);
+  };
+
   const handleFinalSubmit = async () => {
     setUploadStatus("uploading");
     setUploadError("");
@@ -125,6 +139,7 @@ export default function NewShopWithReceiptPage() {
     ];
     if (receiptPreview) initialTasks.push({ id: "receipt", name: "อัปโหลดใบเสร็จรับเงิน/ใบกำกับภาษี", status: "pending" });
     if (slipPreview && !paidWithCash) initialTasks.push({ id: "slip", name: "อัปโหลดสลิปการโอนเงิน", status: "pending" });
+    if (requireIdCard && idCardPreview) initialTasks.push({ id: "idCard", name: "อัปโหลดสำเนาบัตรประชาชนผู้ขาย", status: "pending" });
     
     setUploadTasks(initialTasks);
 
@@ -184,12 +199,31 @@ export default function NewShopWithReceiptPage() {
         }
       }
 
+      if (requireIdCard && idCardPreview && idCardFile) {
+        updateTask("idCard", { status: "uploading" });
+        try {
+          const pdfBase64 = await convertImageToPdfBase64(idCardPreview, idCardFile.type);
+          const idCardFileName = `${baseFileName}-id`;
+          const res = await uploadToGoogleDrive(pdfBase64, folderId, idCardFileName, date, "ร้านค้ามีใบเสร็จ");
+          if (!res.success) throw new Error(res.error || "Failed to upload ID card to Drive");
+          uploadedFiles.push({ type: "id_card_copy", link: res.link, name: idCardFileName, path: `${drivePathPrefix} > ${idCardFileName}.pdf` });
+          updateTask("idCard", { status: "success", link: res.link, path: `${drivePathPrefix} > ${idCardFileName}.pdf` });
+        } catch (e) {
+          updateTask("idCard", { status: "error", error: (e as Error).message });
+          throw e;
+        }
+      }
+
       // 2. Create Transaction and Database Records ONLY if all uploads succeeded
       updateTask("db", { status: "uploading" });
+      const finalDescription = requireIdCard
+        ? (description ? `${description} [REQ_ID]` : "[REQ_ID]")
+        : description;
+
       const transaction = await createTransaction({
         type: "outcome",
         category: "shop_with_receipt",
-        description,
+        description: finalDescription,
         amount: parseFloat(amount) || 0,
         currency: items[0]?.currency || "THB",
         transaction_date: date,
@@ -223,7 +257,7 @@ export default function NewShopWithReceiptPage() {
     }
   };
 
-  const canSubmit = items.length > 0 && shopName && amount && (paidWithCash || slipPreview) && receiptPreview;
+  const canSubmit = items.length > 0 && shopName && amount && (paidWithCash || slipPreview) && receiptPreview && (!requireIdCard || idCardPreview);
 
   return (
     <main className="min-h-screen p-4 md:p-8 pb-24">
@@ -441,6 +475,65 @@ export default function NewShopWithReceiptPage() {
                       className="btn-outline px-6 py-2"
                     >
                       เปลี่ยนสลิป
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          <div className={`card shadow-sm border border-slate-100 ${!requireIdCard ? 'opacity-75 bg-slate-50/50' : ''}`}>
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${requireIdCard ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-200 text-slate-500'}`}>4</div>
+                <h2 className={`text-lg font-bold ${!requireIdCard && 'text-slate-500'}`}>สำเนาบัตรประชาชนผู้ขาย</h2>
+              </div>
+              
+              <label className="flex items-center gap-2 cursor-pointer p-2 hover:bg-slate-50 rounded-lg">
+                <input 
+                  type="checkbox" 
+                  className="w-5 h-5 rounded text-indigo-600 focus:ring-indigo-500"
+                  checked={requireIdCard}
+                  onChange={(e) => setRequireIdCard(e.target.checked)}
+                />
+                <span className="font-medium text-slate-700">แนบสำเนาบัตรฯ</span>
+              </label>
+            </div>
+
+            {requireIdCard && (
+              <div className="bg-slate-50 border border-slate-200 border-dashed rounded-xl p-6 text-center">
+                <input
+                  ref={idCardInputRef}
+                  type="file"
+                  accept="application/pdf,image/jpeg,image/png,image/webp"
+                  onChange={handleIdCardChange}
+                  className="hidden"
+                />
+                {!idCardPreview ? (
+                  <div>
+                    <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-3 shadow-sm text-2xl">🪪</div>
+                    <p className="text-slate-600 font-medium mb-3">อัปโหลดสำเนาบัตรประชาชนผู้ขาย</p>
+                    <button
+                      type="button"
+                      onClick={() => idCardInputRef.current?.click()}
+                      className="btn-outline px-6 py-2"
+                    >
+                      เลือกไฟล์
+                    </button>
+                  </div>
+                ) : (
+                  <div>
+                    {idCardFile?.type === "application/pdf" ? (
+                      <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-3 text-2xl font-bold">PDF</div>
+                    ) : (
+                      <img src={idCardPreview} alt="สำเนาบัตร" className="max-h-48 rounded-lg border object-contain mx-auto shadow-sm mb-3" />
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => idCardInputRef.current?.click()}
+                      className="btn-outline px-6 py-2"
+                    >
+                      เปลี่ยนไฟล์
                     </button>
                   </div>
                 )}

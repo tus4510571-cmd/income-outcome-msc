@@ -8,12 +8,14 @@ interface FileUploadSectionProps {
   transactionId: string;
   transactionDate: string;
   existingFiles: TransactionFile[];
+  description?: string | null;
 }
 
 export default function FileUploadSection({
   transactionId,
   transactionDate,
   existingFiles,
+  description,
 }: FileUploadSectionProps) {
 
   const renderFileBox = (fileType: string, label: string) => {
@@ -77,6 +79,9 @@ export default function FileUploadSection({
         <div className="grid grid-cols-1 gap-4">
           {renderFileBox("transfer_slip", "สลิปการโอนเงิน")}
           {renderFileBox("receipt", "ใบเสร็จร้านค้า")}
+          {(description?.includes("[REQ_ID]") || existingFiles.some(f => f.file_type === "id_card_copy")) && 
+            renderFileBox("id_card_copy", "สำเนาบัตรประชาชนผู้ขาย")
+          }
           {renderAttachments()}
         </div>
 

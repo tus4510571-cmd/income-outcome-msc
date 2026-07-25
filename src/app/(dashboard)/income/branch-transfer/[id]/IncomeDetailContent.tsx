@@ -15,7 +15,7 @@ export default function IncomeDetailContent({ transaction }: IncomeDetailContent
     
     if (file) {
       return (
-        <div className="border-2 rounded-xl p-4 border-emerald-300 bg-emerald-50">
+        <div className="border-2 rounded-xl p-4 border-emerald-300 bg-emerald-50 mb-4">
           <p className="text-sm font-medium text-emerald-700 mb-2">{label}</p>
           <FileImage filePath={file.file_path} label={label} />
         </div>
@@ -23,7 +23,7 @@ export default function IncomeDetailContent({ transaction }: IncomeDetailContent
     }
 
     return (
-      <div className="border-2 rounded-xl p-4 border-slate-200">
+      <div className="border-2 rounded-xl p-4 border-slate-200 mb-4">
         <FileUpload
           transactionId={transaction.id}
           fileType={fileType}
@@ -33,6 +33,35 @@ export default function IncomeDetailContent({ transaction }: IncomeDetailContent
         />
       </div>
     );
+  };
+
+  const renderAttachments = () => {
+    const attachments = transaction.files?.filter((f) => f.file_type.startsWith("attachment_")) || [];
+    
+    const elements = attachments.map((file, idx) => {
+      const label = `เอกสารแนบ ${idx + 1}`;
+      return (
+        <div key={file.id} className="border-2 rounded-xl p-4 border-emerald-300 bg-emerald-50 mb-4">
+          <p className="text-sm font-medium text-emerald-700 mb-2">{label}</p>
+          <FileImage filePath={file.file_path} label={label} />
+        </div>
+      );
+    });
+
+    const nextIndex = attachments.length + 1;
+    elements.push(
+      <div key="new-attachment" className="border-2 rounded-xl p-4 border-slate-200 mb-4">
+        <FileUpload
+          transactionId={transaction.id}
+          fileType={`attachment_${nextIndex}`}
+          transactionDate={transaction.transaction_date}
+          type="income"
+          label={`เพิ่มเอกสารแนบ ${nextIndex} (ถ้ามี)`}
+        />
+      </div>
+    );
+
+    return elements;
   };
 
   return (
@@ -78,8 +107,9 @@ export default function IncomeDetailContent({ transaction }: IncomeDetailContent
 
       <div className="card">
         <h2 className="text-lg font-semibold text-slate-800 mb-4">เอกสาร</h2>
-        <div>
+        <div className="grid grid-cols-1 gap-4">
           {renderFileBox("receipt", "ใบเสร็จที่ออกให้ลูกค้า")}
+          {renderAttachments()}
         </div>
       </div>
     </div>

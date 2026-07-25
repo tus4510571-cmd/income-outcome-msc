@@ -29,7 +29,7 @@ export default function EmployeeFileSection({
     
     if (file) {
       return (
-        <div className="border-2 rounded-xl p-4 border-emerald-300 bg-emerald-50">
+        <div className="border-2 rounded-xl p-4 border-emerald-300 bg-emerald-50 mb-4">
           <p className="text-sm font-medium text-emerald-700 mb-2">{label}</p>
           <FileImage filePath={file.file_path} label={label} />
         </div>
@@ -37,7 +37,7 @@ export default function EmployeeFileSection({
     }
 
     return (
-      <div className="border-2 rounded-xl p-4 border-slate-200">
+      <div className="border-2 rounded-xl p-4 border-slate-200 mb-4">
         <FileUpload
           transactionId={transactionId}
           fileType={fileType}
@@ -49,16 +49,46 @@ export default function EmployeeFileSection({
     );
   };
 
+  const renderAttachments = () => {
+    const attachments = existingFiles.filter((f) => f.file_type.startsWith("attachment_")) || [];
+    
+    const elements = attachments.map((file, idx) => {
+      const label = `เอกสารแนบ ${idx + 1}`;
+      return (
+        <div key={file.id} className="border-2 rounded-xl p-4 border-emerald-300 bg-emerald-50 mb-4">
+          <p className="text-sm font-medium text-emerald-700 mb-2">{label}</p>
+          <FileImage filePath={file.file_path} label={label} />
+        </div>
+      );
+    });
+
+    const nextIndex = attachments.length + 1;
+    elements.push(
+      <div key="new-attachment" className="border-2 rounded-xl p-4 border-slate-200 mb-4">
+        <FileUpload
+          transactionId={transactionId}
+          fileType={`attachment_${nextIndex}`}
+          transactionDate={transactionDate}
+          type="outcome"
+          label={`เพิ่มเอกสารแนบ ${nextIndex} (ถ้ามี)`}
+        />
+      </div>
+    );
+
+    return elements;
+  };
+
   return (
     <div className="space-y-4">
       <div className="card">
-        <h2 className="text-lg font-semibold text-slate-800 mb-4">เอกสาร (3 ไฟล์)</h2>
+        <h2 className="text-lg font-semibold text-slate-800 mb-4">เอกสาร</h2>
         <div className="grid grid-cols-1 gap-4">
           {FILE_TYPES.map((ft) => (
             <div key={ft.type}>
               {renderFileBox(ft.type, ft.label)}
             </div>
           ))}
+          {renderAttachments()}
         </div>
 
         <div className="mt-4">

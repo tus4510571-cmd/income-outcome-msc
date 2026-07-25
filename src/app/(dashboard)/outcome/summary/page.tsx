@@ -51,10 +51,18 @@ export default function SummaryPage() {
     if (t.category === "shop_without_receipt") {
       const hasAttachment = t.files?.some(f => f.file_type === "business_card" || f.file_type.startsWith("attachment_"));
       const hasReceipt = t.files?.some(f => f.file_type === "receipt");
-      const hasSlip = t.files?.some(f => f.file_type === "transfer_slip");
-      
-      if (hasAttachment && hasReceipt) return true;
-      return false;
+      return hasAttachment && hasReceipt;
+    }
+    
+    if (t.category === "shop_with_receipt") {
+      const hasReceipt = t.files?.some(f => f.file_type === "receipt");
+      return !!hasReceipt;
+    }
+    
+    if (t.category === "employee_labor") {
+      const hasIdCard = t.files?.some(f => f.file_type === "id_card_copy");
+      const hasEmployeeReceipt = t.files?.some(f => f.file_type === "employee_receipt");
+      return hasIdCard && hasEmployeeReceipt;
     }
 
     const cat = t.category as keyof typeof REQUIRED_FILES;

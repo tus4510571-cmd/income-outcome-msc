@@ -14,9 +14,9 @@ export default function SummaryPage() {
   const [filter, setFilter] = useState<FilterMode>("complete");
   const [loading, setLoading] = useState(true);
   
-  // Date Range state
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("all");
 
   const supabase = createClient();
 
@@ -70,9 +70,13 @@ export default function SummaryPage() {
     return (t.files?.length || 0) >= reqCount;
   };
 
-  const filtered = filter === "complete"
+  let filtered = filter === "complete"
     ? transactions.filter(isComplete)
     : transactions.filter((t) => !isComplete(t));
+
+  if (categoryFilter !== "all") {
+    filtered = filtered.filter(t => t.category === categoryFilter);
+  }
 
   const getCategoryLabel = (category: string) => {
     switch (category) {
@@ -143,6 +147,20 @@ export default function SummaryPage() {
                 </svg>
               </button>
             )}
+            <div className="h-8 w-px bg-slate-200 mx-1"></div>
+            <div className="flex flex-col">
+              <label className="text-[10px] text-slate-500 font-medium px-1 uppercase tracking-wider">ประเภทรายการ</label>
+              <select 
+                value={categoryFilter} 
+                onChange={(e) => setCategoryFilter(e.target.value)}
+                className="text-sm border-none bg-transparent focus:ring-0 text-slate-700 outline-none px-1"
+              >
+                <option value="all">ทั้งหมด</option>
+                <option value="shop_with_receipt">ร้านค้าที่มีใบเสร็จ</option>
+                <option value="shop_without_receipt">ร้านค้าไม่มีใบเสร็จ</option>
+                <option value="employee_labor">ค่าจ้างพนักงาน</option>
+              </select>
+            </div>
           </div>
         </div>
 

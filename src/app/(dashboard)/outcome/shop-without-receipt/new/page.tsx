@@ -339,7 +339,6 @@ export default function NewShopWithoutReceiptPage() {
             const res = await uploadToGoogleDrive(pdfBase64, folderId, name, date, "ร้านค้าไม่มีใบเสร็จ");
             if (!res.success) throw new Error(res.error || `Failed to upload attached file ${i+1}`);
             if (res.link) await saveGoogleDriveFileLink(transaction.id, `attachment_${i+1}`, res.link, name);
-            await uploadFile(transaction.id, `attachment_${i+1}`, date, "outcome", f.name, dataUrl);
             if (i === 0) updateTask("card", { status: "success", link: res.link, path: `${drivePathPrefix} > ${name}.pdf` });
           }
         } catch (e) {
@@ -356,7 +355,6 @@ export default function NewShopWithoutReceiptPage() {
           const res = await uploadToGoogleDrive(pdfBase64, folderId, slipFileName, date, "ร้านค้าไม่มีใบเสร็จ");
           if (!res.success) throw new Error(res.error || "Failed to upload slip to Drive");
           if (res.link) await saveGoogleDriveFileLink(transaction.id, "transfer_slip", res.link, slipFileName);
-          if (slipFile) await uploadFile(transaction.id, "transfer_slip", date, "outcome", slipFile.name, slipPreview);
           updateTask("slip", { status: "success", link: res.link, path: `${drivePathPrefix} > ${slipFileName}.pdf` });
         } catch (e) {
           updateTask("slip", { status: "error", error: (e as Error).message });
@@ -376,7 +374,6 @@ export default function NewShopWithoutReceiptPage() {
           const cbRes = await uploadToGoogleDrive(cbPdfBase64, folderId, cbFileName, date, "ร้านค้าไม่มีใบเสร็จ");
           if (!cbRes.success) throw new Error(cbRes.error || "Failed to upload cash bill to Drive");
           if (cbRes.link) await saveGoogleDriveFileLink(transaction.id, "cash_bill", cbRes.link, cbFileName);
-          await uploadFile(transaction.id, "cash_bill", date, "outcome", "cash_bill.jpg", cbBase64);
           updateTask("cashbill", { status: "success", link: cbRes.link, path: `${drivePathPrefix} > ${cbFileName}.pdf` });
         } catch (e) {
           updateTask("cashbill", { status: "error", error: (e as Error).message });
@@ -391,7 +388,6 @@ export default function NewShopWithoutReceiptPage() {
         const res = await uploadToGoogleDrive(pdfReceiptBase64, folderId, receiptFileName, date, "ร้านค้าไม่มีใบเสร็จ");
         if (!res.success) throw new Error(res.error || "Failed to upload generated receipt to Drive");
         if (res.link) await saveGoogleDriveFileLink(transaction.id, "receipt", res.link, receiptFileName);
-        await uploadFile(transaction.id, "receipt", date, "outcome", "generated_receipt.jpg", receiptBase64);
         updateTask("receipt", { status: "success", link: res.link, path: `${drivePathPrefix} > ${receiptFileName}.pdf` });
       } catch (e) {
         updateTask("receipt", { status: "error", error: (e as Error).message });

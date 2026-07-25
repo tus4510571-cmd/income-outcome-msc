@@ -173,7 +173,6 @@ export default function NewShopWithReceiptPage() {
           const res = await uploadToGoogleDrive(pdfBase64, folderId, receiptName, date, "ร้านค้ามีใบเสร็จ");
           if (!res.success) throw new Error(res.error || "Failed to upload receipt to Drive");
           if (res.link) await saveGoogleDriveFileLink(transaction.id, "receipt", res.link, receiptName);
-          await uploadFile(transaction.id, "receipt", date, "outcome", receiptFile.name, receiptPreview);
           updateTask("receipt", { status: "success", link: res.link, path: `${drivePathPrefix} > ${receiptName}.pdf` });
         } catch (e) {
           updateTask("receipt", { status: "error", error: (e as Error).message });
@@ -189,7 +188,6 @@ export default function NewShopWithReceiptPage() {
           const res = await uploadToGoogleDrive(pdfBase64, folderId, slipFileName, date, "ร้านค้ามีใบเสร็จ");
           if (!res.success) throw new Error(res.error || "Failed to upload slip to Drive");
           if (res.link) await saveGoogleDriveFileLink(transaction.id, "transfer_slip", res.link, slipFileName);
-          await uploadFile(transaction.id, "transfer_slip", date, "outcome", slipFile.name, slipPreview);
           updateTask("slip", { status: "success", link: res.link, path: `${drivePathPrefix} > ${slipFileName}.pdf` });
         } catch (e) {
           updateTask("slip", { status: "error", error: (e as Error).message });

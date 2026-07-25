@@ -3,7 +3,7 @@
 import { useRef, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { CURRENCY_OPTIONS } from "@/lib/types";
-import { createTransaction, uploadFile, getSetting, getNextDailySequence } from "@/lib/actions";
+import { createTransaction, saveGoogleDriveFileLink, getSetting, getNextDailySequence } from "@/lib/actions";
 import { uploadToGoogleDrive } from "@/lib/drive";
 import { PDFDocument } from "pdf-lib";
 
@@ -147,7 +147,7 @@ export default function NewBranchTransferPage() {
       setUploadProgress(40);
 
       // Upload merged PDF to Drive
-      await uploadToGoogleDrive(mergedPdfBase64, folderId, customFileName, date, "โอนเงินจากสาขา");
+      const res = await uploadToGoogleDrive(mergedPdfBase64, folderId, customFileName, date, "โอนเงินจากสาขา");
       setUploadProgress(60);
 
       // Create Transaction
@@ -162,8 +162,11 @@ export default function NewBranchTransferPage() {
       });
       setUploadProgress(80);
 
-      // Upload to Supabase Storage as fallback / for in-app viewing
-      await uploadFile(transaction.id, "receipt", date, "income", `${customFileName}.pdf`, mergedPdfBase64);
+      if (!res.success) throw new Error(res.error || "Failed to upload to Google Drive");
+      
+      if (res.link) {
+        await saveGoogleDriveFileLink(transaction.id, "receipt", res.link, `${customFileName}.pdf`);
+      }
       
       setUploadProgress(100);
       setUploadStatus("complete");

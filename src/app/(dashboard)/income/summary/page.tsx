@@ -14,9 +14,9 @@ export default function IncomeSummaryPage() {
   const [filter, setFilter] = useState<FilterMode>("complete");
   const [loading, setLoading] = useState(true);
   
-  // Date Range state
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("all");
 
   const supabase = createClient();
 
@@ -54,9 +54,13 @@ export default function IncomeSummaryPage() {
   };
   const isComplete = (t: TransactionWithDetails) => getFileCount(t) >= getRequiredCount(t);
 
-  const filtered = filter === "complete"
+  let filtered = filter === "complete"
     ? transactions.filter(isComplete)
     : transactions.filter((t) => !isComplete(t));
+
+  if (categoryFilter !== "all") {
+    filtered = filtered.filter(t => t.category === categoryFilter);
+  }
 
   const getCategoryLabel = (category: string) => {
     switch (category) {
@@ -127,6 +131,20 @@ export default function IncomeSummaryPage() {
                 </svg>
               </button>
             )}
+            <div className="h-8 w-px bg-slate-200 mx-1"></div>
+            <div className="flex flex-col">
+              <label className="text-[10px] text-slate-500 font-medium px-1 uppercase tracking-wider">ประเภทรายการ</label>
+              <select 
+                value={categoryFilter} 
+                onChange={(e) => setCategoryFilter(e.target.value)}
+                className="text-sm border-none bg-transparent focus:ring-0 text-slate-700 outline-none px-1"
+              >
+                <option value="all">ทั้งหมด</option>
+                <option value="payment_link">Payment Link</option>
+                <option value="chat_direct">ลูกค้าคุยตรง/แชท</option>
+                <option value="branch_transfer">โอนจากสาขา/Event</option>
+              </select>
+            </div>
           </div>
         </div>
 

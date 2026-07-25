@@ -78,6 +78,7 @@ export default function NewShopWithoutReceiptPage() {
   };
   type DriveFile = { id: string; name: string; mimeType: string };
   const [signatureFiles, setSignatureFiles] = useState<DriveFile[]>([]);
+  const [driveListError, setDriveListError] = useState<string | null>(null);
   const [uploadTasks, setUploadTasks] = useState<UploadTask[]>([]);
 
   const router = useRouter();
@@ -124,11 +125,18 @@ export default function NewShopWithoutReceiptPage() {
               setSignatureFiles(data.files);
               const driveNames = data.files.map((f: DriveFile) => f.name.replace(/\.[^/.]+$/, ""));
               setSavedNames(prev => Array.from(new Set([...prev, ...driveNames])));
+              setDriveListError(null);
             }
+          } else {
+             const errData = await res.json();
+             setDriveListError(errData.error || "ไม่สามารถดึงข้อมูลจาก Google Drive ได้ กรุณาอัปเดต GAS Script เป็น V2");
           }
-        } catch (e) {
+        } catch (e: any) {
           console.error("Failed to fetch signature files", e);
+          setDriveListError(e.message || "เกิดข้อผิดพลาดในการเชื่อมต่อ Google Drive");
         }
+      } else {
+        setDriveListError("ยังไม่ได้ตั้งค่า Folder ID ลายเซ็นต์ในหน้า Settings");
       }
     }
     initData();
@@ -171,8 +179,13 @@ export default function NewShopWithoutReceiptPage() {
   const getSignatureUrl = (name: string, fallbackId: string) => {
     if (!name || signatureFiles.length === 0) return `/api/drive-image?id=${fallbackId}`;
     
-    // Find file in drive matching the name
-    const file = signatureFiles.find(f => f.name.toLowerCase().startsWith(name.toLowerCase()));
+    // Find file in drive matching the name (more flexible matching)
+    const normalizedName = name.toLowerCase().replace(/\s+/g, '');
+    const file = signatureFiles.find(f => {
+      const normalizedFileName = f.name.toLowerCase().replace(/\s+/g, '');
+      return normalizedFileName.includes(normalizedName);
+    });
+    
     if (file) {
       return `/api/drive-image?id=${file.id}`;
     }
@@ -678,8 +691,17 @@ export default function NewShopWithoutReceiptPage() {
              </div>
 
              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 bg-slate-50 p-6 rounded-xl border border-slate-200">
-               <div className="md:col-span-3 mb-2 border-b pb-2">
+               <div className="md:col-span-3 mb-2 border-b pb-2 flex justify-between items-center">
                  <h3 className="font-bold text-slate-700">ข้อมูลผู้ลงนาม (ลายเซ็นต์)</h3>
+                 {driveListError ? (
+                   <span className="text-xs text-red-500 font-medium bg-red-50 px-2 py-1 rounded border border-red-100">
+                     ⚠️ {driveListError}
+                   </span>
+                 ) : (
+                   <span className="text-xs text-green-600 font-medium bg-green-50 px-2 py-1 rounded border border-green-100">
+                     ✅ ดึงรูปลิงก์จากโฟลเดอร์สำเร็จ ({signatureFiles.length} รูป)
+                   </span>
+                 )}
                </div>
                <div>
                   <label className="label">ผู้จ่ายเงิน</label>

@@ -13,21 +13,29 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 2. Parse form data (the image file)
+    // 2. Parse form data (the image files)
     const formData = await req.formData();
-    const file = formData.get("receipt") as File | null;
+    const files = formData.getAll("receipt") as File[];
     
-    if (!file) {
+    if (!files || files.length === 0) {
       return NextResponse.json(
-        { error: "No receipt image uploaded." },
+        { error: "No receipt images uploaded." },
         { status: 400 }
       );
     }
 
-    // 3. Convert file to base64 for Gemini
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-    const base64Data = buffer.toString("base64");
+    // 3. Convert files to base64 parts for Gemini
+    const imageParts = await Promise.all(
+      files.map(async (f) => {
+        const bytes = await f.arrayBuffer();
+        return {
+          inlineData: {
+            data: Buffer.from(bytes).toString("base64"),
+            mimeType: f.type,
+          },
+        };
+      })
+    );
     
     // 4. Initialize Gemini SDK
     const ai = new GoogleGenAI({ apiKey: apiKey });
@@ -79,12 +87,7 @@ export async function POST(req: NextRequest) {
                 role: 'user',
                 parts: [
                   { text: prompt },
-                  {
-                    inlineData: {
-                      data: base64Data,
-                      mimeType: file.type,
-                    },
-                  },
+                  ...imageParts,
                 ],
               }
             ],

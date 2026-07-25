@@ -3,6 +3,7 @@
 import { useCallback, useRef, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import ReceiptGenerator from "@/components/ReceiptGenerator";
+import CashBillGenerator from "@/components/CashBillGenerator";
 import { type ReceiptItem, formatCurrency } from "@/lib/types";
 import { createTransaction, addReceiptItems, uploadFile, getSetting, setSetting, getNextDailySequence, getNextMonthlySequence, saveGoogleDriveFileLink } from "@/lib/actions";
 import { uploadToGoogleDrive } from "@/lib/drive";
@@ -13,6 +14,8 @@ import html2canvas from "html2canvas";
 export default function NewShopWithoutReceiptPage() {
   // Step 1: AI Data
   const [shopName, setShopName] = useState("");
+  const [shopAddress, setShopAddress] = useState("");
+  const [shopTaxId, setShopTaxId] = useState("");
   const [description, setDescription] = useState("");
   const [amount, setAmount] = useState("");
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
@@ -23,7 +26,13 @@ export default function NewShopWithoutReceiptPage() {
   
   const [businessCardPreview, setBusinessCardPreview] = useState<string | null>(null);
   const [businessCardFile, setBusinessCardFile] = useState<File | null>(null);
+  const [scannedFiles, setScannedFiles] = useState<File[]>([]);
   const cardInputRef = useRef<HTMLInputElement>(null);
+
+  const [isCashBillMode, setIsCashBillMode] = useState(false);
+  const [companyName, setCompanyName] = useState("");
+  const [companyAddress, setCompanyAddress] = useState("");
+  const [companyTaxId, setCompanyTaxId] = useState("");
 
   const [slipPreview, setSlipPreview] = useState<string | null>(null);
   const [slipFile, setSlipFile] = useState<File | null>(null);
@@ -94,6 +103,14 @@ export default function NewShopWithoutReceiptPage() {
           if (positions.length > 0) setSavedPositions(positions);
         } catch(e) {}
       }
+
+      // Load company details
+      const cName = await getSetting("company_name");
+      if (cName) setCompanyName(cName);
+      const cAddress = await getSetting("company_address");
+      if (cAddress) setCompanyAddress(cAddress);
+      const cTaxId = await getSetting("company_tax_id");
+      if (cTaxId) setCompanyTaxId(cTaxId);
     }
     initData();
   }, [date]);
@@ -151,20 +168,24 @@ export default function NewShopWithoutReceiptPage() {
   };
 
   const handleScanReceipt = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
     
     setIsScanning(true);
     setScanError("");
     
-    setBusinessCardFile(file);
+    const fileArray = Array.from(files);
+    setScannedFiles(fileArray);
+    
+    // Preview the first file
+    setBusinessCardFile(fileArray[0]);
     const reader = new FileReader();
     reader.onload = () => setBusinessCardPreview(reader.result as string);
-    reader.readAsDataURL(file);
+    reader.readAsDataURL(fileArray[0]);
     
     try {
       const formData = new FormData();
-      formData.append("receipt", file);
+      fileArray.forEach(f => formData.append("receipt", f));
       
       const res = await fetch("/api/scan-receipt", {
         method: "POST",
@@ -178,6 +199,8 @@ export default function NewShopWithoutReceiptPage() {
       }
       
       if (data.shopName && data.shopName !== "ไม่ระบุชื่อร้าน") setShopName(data.shopName);
+      if (data.address && data.address !== "ไม่ระบุที่อยู่") setShopAddress(data.address);
+      if (data.taxId && data.taxId !== "ไม่ระบุ Tax ID") setShopTaxId(data.taxId);
       if (data.date) setDate(data.date);
       if (data.totalAmount) setAmount(data.totalAmount.toString());
       if (data.items && Array.isArray(data.items) && data.items.length > 0) {
@@ -202,11 +225,12 @@ export default function NewShopWithoutReceiptPage() {
     setUploadStatus("uploading");
     setUploadError("");
 
-    const initialTasks: { id: string, name: string, status: "pending" | "uploading" | "success" | "error", link?: string, error?: string }[] = [
+    const initialTasks: { id: string, name: string, status: "pending" | "uploading" | "success" | "error", link?: string, error?: string, path?: string }[] = [
       { id: "db", name: "สร้างรายการในฐานข้อมูล", status: "uploading" }
     ];
-    if (businessCardPreview) initialTasks.push({ id: "card", name: "อัปโหลดนามบัตรร้านค้า", status: "pending" });
+    if (scannedFiles.length > 0) initialTasks.push({ id: "card", name: `อัปโหลดไฟล์แนบ (${scannedFiles.length} ไฟล์)`, status: "pending" });
     if (slipPreview && !paidWithCash) initialTasks.push({ id: "slip", name: "อัปโหลดสลิปการโอนเงิน", status: "pending" });
+    if (isCashBillMode) initialTasks.push({ id: "cashbill", name: "สร้างและอัปโหลดบิลเงินสด", status: "pending" });
     initialTasks.push({ id: "receipt", name: "สร้างและอัปโหลดใบรับรองแทนใบเสร็จ", status: "pending" });
     
     setUploadTasks(initialTasks);
@@ -256,15 +280,24 @@ export default function NewShopWithoutReceiptPage() {
       const driveMonthStr = `${String(dateObj.getMonth() + 1).padStart(2, '0')} ${months[dateObj.getMonth()]}`;
       const drivePathPrefix = `${yyyy} > ${driveMonthStr} > ร้านค้าไม่มีใบเสร็จ`;
 
-      if (businessCardPreview) {
+      if (scannedFiles.length > 0) {
         updateTask("card", { status: "uploading" });
         try {
-          const pdfBase64 = await convertImageToPdfBase64(businessCardPreview, businessCardFile?.type || "image/jpeg");
-          const res = await uploadToGoogleDrive(pdfBase64, folderId, baseFileName, date, "ร้านค้าไม่มีใบเสร็จ");
-          if (!res.success) throw new Error(res.error || "Failed to upload business card to Drive");
-          if (res.link) await saveGoogleDriveFileLink(transaction.id, "business_card", res.link, baseFileName);
-          if (businessCardFile) await uploadFile(transaction.id, "business_card", date, "outcome", businessCardFile.name, businessCardPreview);
-          updateTask("card", { status: "success", link: res.link, path: `${drivePathPrefix} > ${baseFileName}.pdf` });
+          for (let i = 0; i < scannedFiles.length; i++) {
+            const f = scannedFiles[i];
+            const dataUrl = await new Promise<string>((resolve) => {
+              const reader = new FileReader();
+              reader.onload = () => resolve(reader.result as string);
+              reader.readAsDataURL(f);
+            });
+            const pdfBase64 = await convertImageToPdfBase64(dataUrl, f.type || "image/jpeg");
+            const name = scannedFiles.length > 1 ? `${baseFileName}-แนบ-${i+1}` : `${baseFileName}-แนบ`;
+            const res = await uploadToGoogleDrive(pdfBase64, folderId, name, date, "ร้านค้าไม่มีใบเสร็จ");
+            if (!res.success) throw new Error(res.error || `Failed to upload attached file ${i+1}`);
+            if (res.link) await saveGoogleDriveFileLink(transaction.id, `attachment_${i+1}`, res.link, name);
+            await uploadFile(transaction.id, `attachment_${i+1}`, date, "outcome", f.name, dataUrl);
+            if (i === 0) updateTask("card", { status: "success", link: res.link, path: `${drivePathPrefix} > ${name}.pdf` });
+          }
         } catch (e) {
           updateTask("card", { status: "error", error: (e as Error).message });
           throw e;
@@ -283,6 +316,26 @@ export default function NewShopWithoutReceiptPage() {
           updateTask("slip", { status: "success", link: res.link, path: `${drivePathPrefix} > ${slipFileName}.pdf` });
         } catch (e) {
           updateTask("slip", { status: "error", error: (e as Error).message });
+          throw e;
+        }
+      }
+
+      if (isCashBillMode) {
+        updateTask("cashbill", { status: "uploading" });
+        try {
+          const cashBillElement = document.getElementById("cashbill-capture");
+          if (!cashBillElement) throw new Error("Cash bill template not found");
+          const cbCanvas = await html2canvas(cashBillElement, { scale: 2, useCORS: true, allowTaint: true });
+          const cbBase64 = cbCanvas.toDataURL("image/jpeg");
+          const cbPdfBase64 = await convertImageToPdfBase64(cbBase64, "image/jpeg");
+          const cbFileName = `${baseFileName}-บิลเงินสด`;
+          const cbRes = await uploadToGoogleDrive(cbPdfBase64, folderId, cbFileName, date, "ร้านค้าไม่มีใบเสร็จ");
+          if (!cbRes.success) throw new Error(cbRes.error || "Failed to upload cash bill to Drive");
+          if (cbRes.link) await saveGoogleDriveFileLink(transaction.id, "cash_bill", cbRes.link, cbFileName);
+          await uploadFile(transaction.id, "cash_bill", date, "outcome", "cash_bill.jpg", cbBase64);
+          updateTask("cashbill", { status: "success", link: cbRes.link, path: `${drivePathPrefix} > ${cbFileName}.pdf` });
+        } catch (e) {
+          updateTask("cashbill", { status: "error", error: (e as Error).message });
           throw e;
         }
       }
@@ -400,9 +453,23 @@ export default function NewShopWithoutReceiptPage() {
               <p className="text-sm text-indigo-600 mb-4 max-w-md mx-auto">
                 AI จะช่วยดึงข้อมูลร้านค้า, ยอดเงิน และรายการสินค้าให้อัตโนมัติ
               </p>
+              <div className="flex items-center justify-center gap-2 mb-4">
+                <input
+                  type="checkbox"
+                  id="cashBillMode"
+                  checked={isCashBillMode}
+                  onChange={(e) => setIsCashBillMode(e.target.checked)}
+                  className="w-4 h-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500"
+                />
+                <label htmlFor="cashBillMode" className="text-sm font-medium text-slate-700 cursor-pointer">
+                  สร้างบิลเงินสดจากนามบัตร (อัปโหลดได้หลายไฟล์)
+                </label>
+              </div>
+
               <input 
                 type="file" 
                 accept="image/*" 
+                multiple
                 className="hidden" 
                 ref={scanInputRef}
                 onChange={handleScanReceipt}
@@ -646,9 +713,9 @@ export default function NewShopWithoutReceiptPage() {
              <div className="border border-slate-300 rounded-lg overflow-x-auto bg-slate-200 p-4">
                 <div id="receipt-capture" className="p-10 font-sans w-[800px] border shadow-sm mx-auto my-0" style={{ minHeight: "1100px", backgroundColor: "#ffffff", color: "#000000", borderColor: "#e5e7eb" }}>
                   <div className="text-sm font-bold leading-relaxed mb-6">
-                    <p>บริษัท โฮมออฟคราฟ จำกัด (สำนักงานใหญ่)</p>
-                    <p>เลขที่ 35 ถ.นิพัทธ์สงเคราะห์ 4 ต.หาดใหญ่ อ.หาดใหญ่ จ.สงขลา 90110</p>
-                    <p>เลขประจำตัวผู้เสียภาษี 0905560005314</p>
+                    <p>{companyName || "บริษัท โฮมออฟคราฟ จำกัด (สำนักงานใหญ่)"}</p>
+                    <p>{companyAddress || "เลขที่ 35 ถ.นิพัทธ์สงเคราะห์ 4 ต.หาดใหญ่ อ.หาดใหญ่ จ.สงขลา 90110"}</p>
+                    <p>{companyTaxId ? `เลขประจำตัวผู้เสียภาษี ${companyTaxId}` : "เลขประจำตัวผู้เสียภาษี 0905560005314"}</p>
                   </div>
 
                   <h1 className="text-2xl font-bold text-center mb-8">ใบรับรองแทนใบเสร็จรับเงิน</h1>
@@ -685,7 +752,7 @@ export default function NewShopWithoutReceiptPage() {
                       <span className="flex-1 border-b" style={{ borderColor: "#000000" }}>{shopName}</span>
                     </div>
                     <div className="flex">
-                      <span className="font-bold mr-4">โดยได้จ่ายไปในงานของทาง บริษัท โฮมออฟคราฟ จำกัด โดยแท้จริง</span>
+                      <span className="font-bold mr-4">โดยได้จ่ายไปในงานของทาง {companyName || "บริษัท โฮมออฟคราฟ จำกัด"} โดยแท้จริง</span>
                       <span>ดังรายการต่อไปนี้</span>
                     </div>
                   </div>
@@ -773,8 +840,26 @@ export default function NewShopWithoutReceiptPage() {
                       <p>- แนบหลักฐานประกอบการจ่ายเงิน (กรณีไม่ได้จ่ายเงินสด)</p>
                     </div>
                   </div>
-                </div>
+              </div>
+           </div>
+
+           {/* Hidden Cash Bill Capture Section */}
+           {isCashBillMode && (
+             <div className="border border-slate-300 rounded-lg overflow-x-auto bg-slate-200 p-4 mt-6">
+               <h3 className="text-center font-bold mb-4">พรีวิวบิลเงินสด</h3>
+               <CashBillGenerator
+                 shopName={shopName}
+                 shopAddress={shopAddress}
+                 shopTaxId={shopTaxId}
+                 companyName={companyName}
+                 companyAddress={companyAddress}
+                 companyTaxId={companyTaxId}
+                 dateString={dateString}
+                 items={items}
+                 totalAmount={totalAmount}
+               />
              </div>
+           )}
           </div>
 
         </div>

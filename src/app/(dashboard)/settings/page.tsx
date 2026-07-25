@@ -30,6 +30,13 @@ export default function SettingsPage() {
   const [signatureFiles, setSignatureFiles] = useState<{id: string, name: string}[]>([]);
   const [loadingFiles, setLoadingFiles] = useState(false);
   
+  // My Company Details (for Shop Without Receipt)
+  const [companyName, setCompanyName] = useState("");
+  const [companyAddress, setCompanyAddress] = useState("");
+  const [companyPhone, setCompanyPhone] = useState("");
+  const [companyEmail, setCompanyEmail] = useState("");
+  const [companyTaxId, setCompanyTaxId] = useState("");
+  
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   
@@ -88,6 +95,21 @@ export default function SettingsPage() {
         setSignatureFolderId(sigFolderId);
         fetchSignatureFiles(sigFolderId);
       }
+
+      const cName = await getSetting("company_name");
+      if (cName) setCompanyName(cName);
+      
+      const cAddress = await getSetting("company_address");
+      if (cAddress) setCompanyAddress(cAddress);
+      
+      const cPhone = await getSetting("company_phone");
+      if (cPhone) setCompanyPhone(cPhone);
+      
+      const cEmail = await getSetting("company_email");
+      if (cEmail) setCompanyEmail(cEmail);
+      
+      const cTaxId = await getSetting("company_tax_id");
+      if (cTaxId) setCompanyTaxId(cTaxId);
 
     } catch (err) {
       console.error(err);
@@ -201,6 +223,23 @@ export default function SettingsPage() {
       await setSetting("signature_payer_drive_id", signaturePayerId);
       await setSetting("signature_approver_drive_id", signatureApproverId);
       setMessage("Signatures saved successfully!");
+    } catch (err) {
+      setMessage((err as Error).message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSaveMyCompany = async () => {
+    setSaving(true);
+    setMessage("");
+    try {
+      await setSetting("company_name", companyName);
+      await setSetting("company_address", companyAddress);
+      await setSetting("company_phone", companyPhone);
+      await setSetting("company_email", companyEmail);
+      await setSetting("company_tax_id", companyTaxId);
+      setMessage("Company details saved successfully!");
     } catch (err) {
       setMessage((err as Error).message);
     } finally {
@@ -565,6 +604,77 @@ export default function SettingsPage() {
         {/* Tab Content: ร้านค้าไม่มีใบเสร็จ */}
         {activeTab === "without-receipt" && (
           <div className="space-y-6">
+            <div className="card border-t-4 border-amber-500">
+              <h2 className="text-lg font-bold mb-1">ข้อมูลบริษัทของเรา (My Company)</h2>
+              <p className="text-sm text-slate-500 mb-6">
+                ข้อมูลส่วนนี้จะถูกนำไปใช้แสดงเป็น "ผู้ซื้อ" ในฟอร์มบิลเงินสดและใบรับรองแทนใบเสร็จรับเงิน
+              </p>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="label">ชื่อบริษัท</label>
+                  <input
+                    type="text"
+                    value={companyName}
+                    onChange={(e) => setCompanyName(e.target.value)}
+                    className="input-field"
+                    placeholder="เช่น บริษัท โฮมออฟคราฟ จำกัด"
+                  />
+                </div>
+                <div>
+                  <label className="label">ที่อยู่บริษัท</label>
+                  <textarea
+                    value={companyAddress}
+                    onChange={(e) => setCompanyAddress(e.target.value)}
+                    className="input-field min-h-[80px]"
+                    placeholder="บ้านเลขที่ ซอย ถนน ตำบล อำเภอ จังหวัด รหัสไปรษณีย์"
+                  />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="label">เบอร์โทรศัพท์</label>
+                    <input
+                      type="text"
+                      value={companyPhone}
+                      onChange={(e) => setCompanyPhone(e.target.value)}
+                      className="input-field"
+                      placeholder="เช่น 02-xxx-xxxx"
+                    />
+                  </div>
+                  <div>
+                    <label className="label">อีเมล</label>
+                    <input
+                      type="email"
+                      value={companyEmail}
+                      onChange={(e) => setCompanyEmail(e.target.value)}
+                      className="input-field"
+                      placeholder="เช่น info@example.com"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="label">เลขประจำตัวผู้เสียภาษี (Tax ID)</label>
+                  <input
+                    type="text"
+                    value={companyTaxId}
+                    onChange={(e) => setCompanyTaxId(e.target.value)}
+                    className="input-field"
+                    placeholder="เลข 13 หลัก"
+                  />
+                </div>
+
+                <div className="pt-2 border-t border-slate-100 dark:border-slate-800 mt-4">
+                  <button
+                    onClick={handleSaveMyCompany}
+                    disabled={saving}
+                    className="btn-secondary w-full border-amber-200 text-amber-700 hover:bg-amber-50 mt-4"
+                  >
+                    {saving ? "กำลังบันทึก..." : "บันทึกข้อมูลบริษัท"}
+                  </button>
+                </div>
+              </div>
+            </div>
+
             <div className="card border-t-4 border-amber-500">
               <h2 className="text-lg font-bold mb-1">การตั้งค่าใบรับรองแทนใบเสร็จรับเงิน</h2>
               <p className="text-sm text-slate-500 mb-6">

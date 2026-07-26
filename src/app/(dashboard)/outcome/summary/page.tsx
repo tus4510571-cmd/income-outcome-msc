@@ -94,6 +94,23 @@ export default function SummaryPage() {
 
   const totalAmount = filtered.reduce((sum, t) => sum + t.amount, 0);
 
+  const handleExportExcel = async () => {
+    const XLSX = await import("xlsx");
+    const data = filtered.map((t) => ({
+      "วันที่": formatDate(t.transaction_date),
+      "ประเภท": getCategoryLabel(t.category),
+      "ชื่อ/ร้านค้า": getDetailName(t),
+      "รายละเอียด": t.description || "-",
+      "จำนวนเงิน": t.amount,
+      "สถานะเอกสาร": isComplete(t) ? "ครบถ้วน" : "ขาดเอกสาร",
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Outcome");
+    XLSX.writeFile(workbook, `outcome_summary_${new Date().toISOString().split("T")[0]}.xlsx`);
+  };
+
   const getCategoryLabel = (category: string) => {
     switch (category) {
       case "shop_with_receipt": return "ร้านค้าที่มีใบเสร็จ";
@@ -204,10 +221,22 @@ export default function SummaryPage() {
                 -฿{totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </h2>
             </div>
-            <div className="w-12 h-12 rounded-full bg-rose-50 flex items-center justify-center">
-              <svg className="w-6 h-6 text-rose-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4M4 12l6-6m-6 6l6 6" />
-              </svg>
+            <div className="flex items-center gap-3">
+              <button 
+                onClick={handleExportExcel}
+                className="p-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-medium text-sm flex items-center gap-2 transition-colors"
+                title="Export เป็น Excel"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                <span className="hidden md:inline">Export Excel</span>
+              </button>
+              <div className="w-12 h-12 rounded-full bg-rose-50 flex items-center justify-center">
+                <svg className="w-6 h-6 text-rose-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4M4 12l6-6m-6 6l6 6" />
+                </svg>
+              </div>
             </div>
           </div>
         </div>

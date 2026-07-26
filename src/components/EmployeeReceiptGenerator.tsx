@@ -31,7 +31,7 @@ export default function EmployeeReceiptGenerator({
   taxRate,
 }: EmployeeReceiptGeneratorProps) {
   return (
-    <div id="receipt-capture" className="p-8 font-sans border border-black mx-auto my-0 bg-white text-black text-sm flex flex-col" style={{ width: "794px", height: "1000px", minHeight: "1000px", boxSizing: "border-box" }}>
+    <div id="receipt-capture" className="p-8 font-sans border border-black mx-auto my-0 bg-white text-black text-sm flex flex-col" style={{ width: "794px", height: "900px", minHeight: "900px", boxSizing: "border-box" }}>
       
       {/* Top Left Company Info */}
       <div className="mb-4 text-xs font-bold leading-relaxed">
@@ -130,7 +130,7 @@ export default function EmployeeReceiptGenerator({
           )}
 
           {/* Empty rows filler */}
-          {Array.from({ length: taxRate > 0 ? 7 : 8 }).map((_, i) => (
+          {Array.from({ length: taxRate > 0 ? 3 : 4 }).map((_, i) => (
             <tr key={`empty-${i}`} className="border-x border-black h-8">
               <td className="border-r border-black"></td>
               <td className="border-r border-black"></td>
@@ -154,7 +154,7 @@ export default function EmployeeReceiptGenerator({
       </table>
 
       {/* Signatures */}
-      <div className="flex justify-between px-10 mt-12 mb-8">
+      <div className="flex justify-between px-10 mt-8 mb-4">
         <div className="w-64">
           <div className="flex items-end mb-6">
             <span className="w-12">ลงชื่อ</span>
@@ -181,7 +181,7 @@ export default function EmployeeReceiptGenerator({
       </div>
 
       {/* Footer Notes */}
-      <div className="mt-12 text-xs space-y-1">
+      <div className="mt-6 text-xs space-y-1">
         <p className="font-bold">หมายเหตุ :</p>
         <p>- แนบสำเนาบัตรประจำตัวประชาชนผู้รับเงิน (ซึ่งเป็นผู้ประกอบอาชีพขายสินค้า/ให้บริการอย่างแท้จริง)</p>
         <p>- แนบหลักฐานประกอบการจ่ายเงิน (กรณีไม่ได้จ่ายเงินสด)</p>

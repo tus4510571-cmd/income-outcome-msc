@@ -795,7 +795,7 @@ export default function NewShopWithoutReceiptPage() {
              </div>
 
              <div className="border border-slate-300 rounded-lg overflow-x-auto bg-slate-200 p-4">
-                <div id="receipt-capture" className="p-10 font-sans border shadow-sm mx-auto my-0 flex flex-col" style={{ width: "794px", height: "1000px", minHeight: "1000px", backgroundColor: "#ffffff", color: "#000000", borderColor: "#e5e7eb", boxSizing: "border-box" }}>
+                <div id="receipt-capture" className="p-10 font-sans border shadow-sm mx-auto my-0 flex flex-col" style={{ width: "794px", height: "900px", minHeight: "900px", backgroundColor: "#ffffff", color: "#000000", borderColor: "#e5e7eb", boxSizing: "border-box" }}>
                   <div className="text-sm font-bold leading-relaxed mb-6">
                     <p>{companyName || "บริษัท โฮมออฟคราฟ จำกัด (สำนักงานใหญ่)"}</p>
                     <p>{companyAddress || "เลขที่ 35 ถ.นิพัทธ์สงเคราะห์ 4 ต.หาดใหญ่ อ.หาดใหญ่ จ.สงขลา 90110"}</p>
@@ -863,7 +863,7 @@ export default function NewShopWithoutReceiptPage() {
                           <td className="text-right px-2">{formatCurrency(item.quantity * item.unit_price, "").trim()}</td>
                         </tr>
                       ))}
-                      {Array.from({ length: Math.max(0, 6 - items.length) }).map((_, i) => (
+                      {Array.from({ length: Math.max(0, 3 - items.length) }).map((_, i) => (
                         <tr key={`empty-${i}`} className="border-x h-8" style={{ borderColor: "#000000" }}>
                           <td className="border-r" style={{ borderColor: "#000000" }}></td>
                           <td className="border-r" style={{ borderColor: "#000000" }}></td>

@@ -76,8 +76,13 @@ export default function CreateEmployeeLaborTransactionPage() {
     e.stopPropagation();
     if (!confirm("คุณต้องการลบใบสำคัญรับเงินนี้ใช่หรือไม่? (การลบจะไม่สามารถกู้คืนได้)")) return;
     try {
-      const { error } = await supabase.from("employee_receipts").delete().eq("id", id);
+      const { data, error } = await supabase.from("employee_receipts").delete().eq("id", id).select();
       if (error) throw error;
+      
+      if (!data || data.length === 0) {
+        throw new Error("ระบบไม่สามารถลบข้อมูลได้ (อาจเกิดจากการตั้งค่าสิทธิ์ RLS ในฐานข้อมูล Supabase)");
+      }
+
       setReceipts(prev => prev.filter(r => r.id !== id));
       if (selectedReceiptId === id) setSelectedReceiptId("");
     } catch (err: any) {

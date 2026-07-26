@@ -33,7 +33,8 @@ export default function CreateEmployeeLaborTransactionPage() {
   const router = useRouter();
   const supabase = createClient();
 
-  const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
+  const [startDate, setStartDate] = useState(new Date().toISOString().split("T")[0]);
+  const [endDate, setEndDate] = useState(new Date().toISOString().split("T")[0]);
   const [receipts, setReceipts] = useState<EmployeeReceipt[]>([]);
   const [selectedReceiptId, setSelectedReceiptId] = useState<string>("");
   
@@ -51,7 +52,7 @@ export default function CreateEmployeeLaborTransactionPage() {
 
   useEffect(() => {
     fetchReceipts();
-  }, [date]);
+  }, [startDate, endDate]);
 
   const fetchReceipts = async () => {
     try {
@@ -59,7 +60,8 @@ export default function CreateEmployeeLaborTransactionPage() {
         .from("employee_receipts")
         .select("*")
         .eq("status", "PENDING")
-        .or(`start_date.eq.${date},end_date.eq.${date}`) // Basic filter by date match
+        .gte("start_date", startDate)
+        .lte("start_date", endDate)
         .order("created_at", { ascending: false });
         
       if (error) throw error;
@@ -103,7 +105,7 @@ export default function CreateEmployeeLaborTransactionPage() {
   const handleSubmit = async () => {
     if (!selectedReceipt) return;
     if (!slipFile || !idFile || !receiveFile) {
-      setOverallError("กรุณาแนบเอกสารให้ครบทั้ง 3 ช่อง");
+      alert("กรุณาแนบไฟล์ให้ครบถ้วน");
       return;
     }
 
@@ -111,21 +113,22 @@ export default function CreateEmployeeLaborTransactionPage() {
     setOverallError("");
     setUploadTasks([
       { id: "slip", name: "สลิปโอนเงิน", status: "pending" },
-      { id: "id_card", name: "สำเนาบัตรประชาชน", status: "pending" },
+      { id: "id_card", name: "สำเนาบัตร ปชช.", status: "pending" },
       { id: "receipt", name: "ใบสำคัญรับเงิน", status: "pending" },
-      { id: "merge", name: "รวมไฟล์ทั้งหมดเป็น PDF สรุป", status: "pending" }
+      { id: "merge", name: "รวมไฟล์ PDF", status: "pending" }
     ]);
+
+    const date = selectedReceipt.start_date;
+    const d = new Date(date);
+    const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const yy = String(d.getFullYear() + 543).slice(-2);
+    const datePrefix = `${dd}${mm}${yy}`;
+    const nickname = selectedReceipt.nickname || "ไม่มีชื่อ";
 
     try {
       const folderId = await getSetting("outcome_drive_folder_id");
       if (!folderId) throw new Error("ไม่พบ Folder ID สำหรับบันทึกไฟล์ (กรุณาตั้งค่าใน Settings)");
-
-      const d = new Date();
-      const dd = String(d.getDate()).padStart(2, '0');
-      const mm = String(d.getMonth() + 1).padStart(2, '0');
-      const yy = String(d.getFullYear() + 543).slice(-2); // ปี พ.ศ. 2 หลัก เช่น 69
-      const datePrefix = `${dd}${mm}${yy}`;
-      const nickname = selectedReceipt.nickname || "ไม่มีชื่อ";
       
       const filesToUpload = [
         { file: slipFile, suffix: "slip", taskId: "slip" },
@@ -278,13 +281,22 @@ export default function CreateEmployeeLaborTransactionPage() {
               <h2 className="text-lg font-bold mb-4 border-b pb-2">ส่วนที่ 1: เลือกใบสำคัญรับเงิน</h2>
               
               <div className="mb-4">
-                <label className="label">เลือกวันที่เพื่อค้นหา</label>
-                <input 
-                  type="date" 
-                  className="input-field max-w-xs" 
-                  value={date} 
-                  onChange={e => setDate(e.target.value)} 
-                />
+                <label className="label">เลือกช่วงวันที่เพื่อค้นหา</label>
+                <div className="flex items-center gap-4">
+                  <input 
+                    type="date" 
+                    className="input-field max-w-xs" 
+                    value={startDate} 
+                    onChange={e => setStartDate(e.target.value)} 
+                  />
+                  <span className="text-sm font-bold text-slate-500">ถึง</span>
+                  <input 
+                    type="date" 
+                    className="input-field max-w-xs" 
+                    value={endDate} 
+                    onChange={e => setEndDate(e.target.value)} 
+                  />
+                </div>
               </div>
 
               {receipts.length > 0 ? (
@@ -318,9 +330,7 @@ export default function CreateEmployeeLaborTransactionPage() {
                   ))}
                 </div>
               ) : (
-                <div className="p-4 text-center border border-dashed border-slate-300 rounded-xl text-slate-500">
-                  ไม่พบรายการใบสำคัญรับเงินในวันที่นี้
-                </div>
+                <div className="text-slate-500 py-8 text-center text-sm font-medium border-2 border-dashed rounded-xl">ไม่พบรายการใบสำคัญรับเงินในช่วงวันที่นี้</div>
               )}
             </div>
 

@@ -51,9 +51,8 @@ export default function SummaryPage() {
   }, [supabase, startDate, endDate]);
 
   const isComplete = (t: TransactionWithDetails) => {
-    const cat = t.category as keyof typeof REQUIRED_FILES;
-    const reqCount = REQUIRED_FILES[cat]?.length || 0;
-    return (t.files?.length || 0) >= reqCount;
+    const hasReceipt = t.files?.some(f => f.file_type === "receipt");
+    return !!hasReceipt;
   };
 
   let filtered = filter === "complete"

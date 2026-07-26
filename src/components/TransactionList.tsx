@@ -28,6 +28,7 @@ export default function TransactionList({ transactions, baseHref, showFiles = fa
     }
     
     if (t.category === "employee_labor") return 3; // transfer_slip, id_card_copy, employee_receipt
+    if (t.type === "income") return 1; // receipt
     return 0;
   };
   if (!transactions || transactions.length === 0) {

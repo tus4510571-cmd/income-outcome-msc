@@ -31,7 +31,7 @@ export default function EmployeeReceiptGenerator({
   taxRate,
 }: EmployeeReceiptGeneratorProps) {
   return (
-    <div id="receipt-capture" className="p-8 font-sans border border-black mx-auto my-0 bg-white text-black text-sm flex flex-col" style={{ width: "794px", height: "1000px", minHeight: "1000px", boxSizing: "border-box", overflow: "hidden" }}>
+    <div id="receipt-capture" className="p-8 font-sans border border-black mx-auto my-0 bg-white text-black text-sm flex flex-col" style={{ width: "794px", height: "900px", minHeight: "900px", boxSizing: "border-box", overflow: "hidden" }}>
       
       {/* Top Left Company Info */}
       <div className="mb-4 text-xs font-bold leading-relaxed">

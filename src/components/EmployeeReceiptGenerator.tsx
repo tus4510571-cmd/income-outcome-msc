@@ -13,6 +13,7 @@ interface EmployeeReceiptGeneratorProps {
   amountBeforeTax: number;
   taxAmount: number;
   amountAfterTax: number;
+  taxRate: number;
 }
 
 export default function EmployeeReceiptGenerator({
@@ -27,6 +28,7 @@ export default function EmployeeReceiptGenerator({
   amountBeforeTax,
   taxAmount,
   amountAfterTax,
+  taxRate,
 }: EmployeeReceiptGeneratorProps) {
   return (
     <div id="receipt-capture" className="p-10 font-sans w-[800px] border shadow-sm mx-auto my-0 bg-white text-black text-sm" style={{ minHeight: "1000px", borderColor: "#e5e7eb" }}>
@@ -98,16 +100,18 @@ export default function EmployeeReceiptGenerator({
           </tr>
           
           {/* Row 2: Tax deduction */}
-          <tr className="border-x border-black h-10 text-red-600">
-            <td className="border-r border-black text-black">2</td>
-            <td className="border-r border-black text-left px-4 text-black">หักภาษี ณ ที่จ่าย 3%</td>
-            <td className="border-r border-black text-black">1</td>
-            <td className="border-r border-black text-right px-4">-{formatCurrency(taxAmount, "")}</td>
-            <td className="border-r border-black text-right px-4">-{formatCurrency(taxAmount, "")}</td>
-          </tr>
+          {taxRate > 0 && (
+            <tr className="border-x border-black h-10 text-red-600">
+              <td className="border-r border-black text-black">2</td>
+              <td className="border-r border-black text-left px-4 text-black">หักภาษี ณ ที่จ่าย {taxRate}%</td>
+              <td className="border-r border-black text-black">1</td>
+              <td className="border-r border-black text-right px-4">-{formatCurrency(taxAmount, "")}</td>
+              <td className="border-r border-black text-right px-4">-{formatCurrency(taxAmount, "")}</td>
+            </tr>
+          )}
 
           {/* Empty rows filler */}
-          {Array.from({ length: 12 }).map((_, i) => (
+          {Array.from({ length: taxRate > 0 ? 12 : 13 }).map((_, i) => (
             <tr key={`empty-${i}`} className="border-x border-black h-8">
               <td className="border-r border-black"></td>
               <td className="border-r border-black"></td>

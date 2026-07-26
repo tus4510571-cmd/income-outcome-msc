@@ -64,6 +64,9 @@ export default function CreateEmployeeReceiptPage() {
   
   const [amountBeforeTax, setAmountBeforeTax] = useState<number | "">("");
   
+  const [taxRateType, setTaxRateType] = useState<"3" | "1" | "other" | "0">("3");
+  const [customTaxRate, setCustomTaxRate] = useState<string>("");
+  
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   
@@ -89,7 +92,13 @@ export default function CreateEmployeeReceiptPage() {
   };
 
   const amountBeforeTaxNum = Number(amountBeforeTax) || 0;
-  const taxAmount = amountBeforeTaxNum * 0.03;
+  
+  let taxRate = 0;
+  if (taxRateType === "3") taxRate = 3;
+  else if (taxRateType === "1") taxRate = 1;
+  else if (taxRateType === "other") taxRate = Number(customTaxRate) || 0;
+
+  const taxAmount = amountBeforeTaxNum * (taxRate / 100);
   const amountAfterTax = amountBeforeTaxNum - taxAmount;
   const dateText = formatThaiDateRange(startDate, endDate);
 
@@ -289,7 +298,7 @@ export default function CreateEmployeeReceiptPage() {
               <h2 className="text-lg font-bold mb-4 border-b pb-2">การจ่ายเงิน</h2>
               <div className="space-y-4">
                 <div>
-                  <label className="label">จำนวนเงินที่จ้าง (ก่อนหัก 3%) <span className="text-red-500">*</span></label>
+                  <label className="label">จำนวนเงินที่จ้าง (ก่อนหักภาษี) <span className="text-red-500">*</span></label>
                   <div className="relative">
                     <input 
                       type="number" 
@@ -302,13 +311,41 @@ export default function CreateEmployeeReceiptPage() {
                   </div>
                 </div>
 
+                <div>
+                  <label className="label">อัตราภาษีหัก ณ ที่จ่าย <span className="text-red-500">*</span></label>
+                  <div className="flex gap-4 mt-2">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input type="radio" name="taxRate" value="3" checked={taxRateType === "3"} onChange={() => setTaxRateType("3")} className="w-4 h-4 text-emerald-600 focus:ring-emerald-500" />
+                      <span className="text-sm font-medium">3%</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input type="radio" name="taxRate" value="1" checked={taxRateType === "1"} onChange={() => setTaxRateType("1")} className="w-4 h-4 text-emerald-600 focus:ring-emerald-500" />
+                      <span className="text-sm font-medium">1%</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input type="radio" name="taxRate" value="0" checked={taxRateType === "0"} onChange={() => setTaxRateType("0")} className="w-4 h-4 text-emerald-600 focus:ring-emerald-500" />
+                      <span className="text-sm font-medium">ไม่หัก (0%)</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input type="radio" name="taxRate" value="other" checked={taxRateType === "other"} onChange={() => setTaxRateType("other")} className="w-4 h-4 text-emerald-600 focus:ring-emerald-500" />
+                      <span className="text-sm font-medium">อื่นๆ</span>
+                    </label>
+                  </div>
+                  {taxRateType === "other" && (
+                    <div className="mt-2 flex items-center gap-2">
+                      <input type="number" className="input-field max-w-[100px]" value={customTaxRate} onChange={e => setCustomTaxRate(e.target.value)} placeholder="0.00" />
+                      <span className="text-slate-500 font-medium">%</span>
+                    </div>
+                  )}
+                </div>
+
                 <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-200">
                   <div className="flex justify-between items-center text-sm text-emerald-700 mb-1">
-                    <span>หักภาษี ณ ที่จ่าย 3%</span>
+                    <span>หักภาษี ณ ที่จ่าย {taxRate}%</span>
                     <span>{taxAmount.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} บาท</span>
                   </div>
                   <div className="flex justify-between items-center font-bold text-lg text-emerald-900 mt-2 pt-2 border-t border-emerald-200">
-                    <span>คงเหลือเงินที่ต้องจ่ายหลังหัก 3%</span>
+                    <span>คงเหลือเงินที่ต้องจ่ายสุทธิ</span>
                     <span>{amountAfterTax.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} บาท</span>
                   </div>
                   <div className="text-xs text-emerald-600 mt-1 text-right">
@@ -357,6 +394,7 @@ export default function CreateEmployeeReceiptPage() {
                 amountBeforeTax={amountBeforeTaxNum}
                 taxAmount={taxAmount}
                 amountAfterTax={amountAfterTax}
+                taxRate={taxRate}
               />
             </div>
           </div>
@@ -377,6 +415,7 @@ export default function CreateEmployeeReceiptPage() {
           amountBeforeTax={amountBeforeTaxNum}
           taxAmount={taxAmount}
           amountAfterTax={amountAfterTax}
+          taxRate={taxRate}
         />
       </div>
     </main>

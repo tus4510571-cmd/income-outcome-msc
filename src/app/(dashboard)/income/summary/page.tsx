@@ -9,11 +9,11 @@ import TransactionList from "@/components/TransactionList";
 
 import { useRouter } from "next/navigation";
 
-type FilterMode = "complete" | "incomplete";
+type FilterMode = "all" | "complete" | "incomplete";
 
 export default function SummaryPage() {
   const [transactions, setTransactions] = useState<TransactionWithDetails[]>([]);
-  const [filter, setFilter] = useState<FilterMode>("complete");
+  const [filter, setFilter] = useState<FilterMode>("all");
   const [loading, setLoading] = useState(true);
   
   const [startDate, setStartDate] = useState("");
@@ -55,13 +55,18 @@ export default function SummaryPage() {
     return !!hasReceipt;
   };
 
-  let filtered = filter === "complete"
-    ? transactions.filter(isComplete)
-    : transactions.filter((t) => !isComplete(t));
+  let filtered = transactions;
+  if (filter === "complete") {
+    filtered = transactions.filter(isComplete);
+  } else if (filter === "incomplete") {
+    filtered = transactions.filter((t) => !isComplete(t));
+  }
 
   if (categoryFilter !== "all") {
     filtered = filtered.filter(t => t.category === categoryFilter);
   }
+
+  const totalAmount = filtered.reduce((sum, t) => sum + t.amount, 0);
 
   const getCategoryLabel = (category: string) => {
     switch (category) {
@@ -156,7 +161,33 @@ export default function SummaryPage() {
           </div>
         </div>
 
-        <div className="flex gap-3 mb-6">
+        <div className="flex flex-col md:flex-row gap-4 mb-6">
+          <div className="flex-1 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-slate-500">ยอดรวม (ตามตัวกรองที่เลือก)</p>
+              <h2 className="text-3xl font-black text-emerald-600 mt-1">
+                +฿{totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </h2>
+            </div>
+            <div className="w-12 h-12 rounded-full bg-emerald-50 flex items-center justify-center">
+              <svg className="w-6 h-6 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap gap-3 mb-6">
+          <button
+            onClick={() => setFilter("all")}
+            className={`px-5 py-2.5 rounded-xl font-medium text-sm transition-all duration-200 ${
+              filter === "all"
+                ? "bg-slate-800 text-white shadow-md"
+                : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"
+            }`}
+          >
+            ทั้งหมด ({transactions.length})
+          </button>
           <button
             onClick={() => setFilter("complete")}
             className={`px-5 py-2.5 rounded-xl font-medium text-sm transition-all duration-200 ${
@@ -180,8 +211,8 @@ export default function SummaryPage() {
         </div>
 
         {filtered.length === 0 ? (
-          <div className="card text-center py-12 text-slate-500">
-            <p>{filter === "complete" ? "ยังไม่มีรายการที่เอกสารครบ" : "ไม่มีรายการที่ขาดเอกสาร"}</p>
+          <div className="card text-center py-12 text-slate-500 bg-white rounded-2xl border border-slate-100">
+            <p>{filter === "complete" ? "ยังไม่มีรายการที่เอกสารครบ" : filter === "incomplete" ? "ไม่มีรายการที่ขาดเอกสาร" : "ยังไม่มีรายการในช่วงเวลานี้"}</p>
           </div>
         ) : (
           <TransactionList transactions={filtered as any[]} showFiles={true} />

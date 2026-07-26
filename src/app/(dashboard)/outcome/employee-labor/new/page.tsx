@@ -309,6 +309,7 @@ export default function CreateEmployeeLaborTransactionPage() {
                           </button>
                         </div>
                       </div>
+                    </div>
                   ))}
                 </div>
               ) : (

@@ -1,5 +1,3 @@
-"use server";
-
 import { getSetting } from "./actions";
 
 export async function uploadToGoogleDrive(base64File: string, folderId: string, customFileName?: string, transactionDate?: string, subFolder?: string) {
@@ -26,7 +24,7 @@ export async function uploadToGoogleDrive(base64File: string, folderId: string, 
     const response = await fetch(gasUrl, {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
+        "Content-Type": "text/plain;charset=utf-8",
       },
       body: JSON.stringify({
         folderId,

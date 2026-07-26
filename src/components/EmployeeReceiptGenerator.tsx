@@ -31,7 +31,7 @@ export default function EmployeeReceiptGenerator({
   taxRate,
 }: EmployeeReceiptGeneratorProps) {
   return (
-    <div id="receipt-capture" className="p-8 font-sans border border-black mx-auto my-0 bg-white text-black text-sm flex flex-col" style={{ width: "794px", height: "1040px", minHeight: "1040px", boxSizing: "border-box" }}>
+    <div id="receipt-capture" className="p-8 font-sans border border-black mx-auto my-0 bg-white text-black text-sm flex flex-col" style={{ width: "794px", height: "1000px", minHeight: "1000px", boxSizing: "border-box" }}>
       
       {/* Top Left Company Info */}
       <div className="mb-4 text-xs font-bold leading-relaxed">
@@ -130,7 +130,7 @@ export default function EmployeeReceiptGenerator({
           )}
 
           {/* Empty rows filler */}
-          {Array.from({ length: taxRate > 0 ? 12 : 13 }).map((_, i) => (
+          {Array.from({ length: taxRate > 0 ? 7 : 8 }).map((_, i) => (
             <tr key={`empty-${i}`} className="border-x border-black h-8">
               <td className="border-r border-black"></td>
               <td className="border-r border-black"></td>

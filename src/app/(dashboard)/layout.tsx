@@ -8,9 +8,13 @@ export default function DashboardLayout({
 }) {
   return (
     <div className="flex min-h-screen h-screen bg-[#FDFDFD] overflow-hidden">
-      <Sidebar />
+      <div className="print:hidden h-full">
+        <Sidebar />
+      </div>
       <div className="flex-1 flex flex-col min-w-0 h-full">
-        <MobileHeader />
+        <div className="print:hidden">
+          <MobileHeader />
+        </div>
         
         {/* Main Content Area */}
         <div className="flex-1 overflow-y-auto">

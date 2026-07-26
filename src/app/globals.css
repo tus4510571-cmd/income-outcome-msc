@@ -108,3 +108,4 @@ body {
 .label {
   @apply block text-sm font-medium text-slate-700 mb-1;
 }
+@media print { @page { margin: 0; size: auto; } body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; } }

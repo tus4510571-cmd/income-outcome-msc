@@ -16,6 +16,7 @@ export default function NewShopWithoutReceiptPage() {
   const [shopName, setShopName] = useState("");
   const [shopAddress, setShopAddress] = useState("");
   const [shopTaxId, setShopTaxId] = useState("");
+  const [platform, setPlatform] = useState("");
   const [description, setDescription] = useState("");
   const [amount, setAmount] = useState("");
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
@@ -411,10 +412,11 @@ export default function NewShopWithoutReceiptPage() {
 
       // 2. Create Transaction and Database Records ONLY if all uploads succeeded
       updateTask("db", { status: "uploading" });
+      const finalDescription = [platform && platform !== "Other" ? platform : "", description].filter(Boolean).join(" ");
       const transaction = await createTransaction({
         type: "outcome",
         category: "shop_without_receipt",
-        description,
+        description: finalDescription,
         amount: parseFloat(amount) || 0,
         currency: items[0]?.currency || "THB",
         transaction_date: date,
@@ -581,13 +583,27 @@ export default function NewShopWithoutReceiptPage() {
               </div>
               <div className="md:col-span-2">
                 <label className="label">รายละเอียด (ไม่บังคับ)</label>
-                <input
-                  type="text"
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  className="input-field"
-                  placeholder="เช่น ค่าจัดส่งพัสดุ"
-                />
+                <div className="flex gap-2">
+                  <select
+                    className="input-field max-w-[150px] cursor-pointer"
+                    value={platform}
+                    onChange={(e) => setPlatform(e.target.value)}
+                  >
+                    <option value="">(ระบุที่มา)</option>
+                    <option value="Shopee">Shopee</option>
+                    <option value="Lazada">Lazada</option>
+                    <option value="TiktokShop">TiktokShop</option>
+                    <option value="FB">FB</option>
+                    <option value="Other">อื่นๆ</option>
+                  </select>
+                  <input
+                    type="text"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    className="input-field"
+                    placeholder="พิมพ์รายละเอียดเพิ่มเติม เช่น ค่าจัดส่งพัสดุ"
+                  />
+                </div>
               </div>
             </div>
           </div>

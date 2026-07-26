@@ -115,6 +115,26 @@ export async function POST(req: NextRequest) {
       }
 
       const extractedData = JSON.parse(finalResultText);
+      
+      // Auto-balancing logic to ensure items sum exactly to totalAmount
+      if (extractedData.items && Array.isArray(extractedData.items) && typeof extractedData.totalAmount === 'number') {
+        const currentSum = extractedData.items.reduce((sum: number, item: any) => {
+          const qty = item.quantity || 1;
+          const price = item.price || 0;
+          return sum + (qty * price);
+        }, 0);
+        
+        // If there's a discrepancy (allowing 0.01 for floating point rounding)
+        if (Math.abs(currentSum - extractedData.totalAmount) > 0.01) {
+          const difference = extractedData.totalAmount - currentSum;
+          extractedData.items.push({
+            name: "ส่วนต่างปรับปรุงยอดให้ตรงกับบิล (ระบบคำนวณอัตโนมัติ)",
+            quantity: 1,
+            price: Number(difference.toFixed(2))
+          });
+        }
+      }
+
       return NextResponse.json(extractedData);
     } catch (apiError: any) {
       console.error("Gemini API Error:", apiError);

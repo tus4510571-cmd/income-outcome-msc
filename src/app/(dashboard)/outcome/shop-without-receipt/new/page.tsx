@@ -811,7 +811,7 @@ export default function NewShopWithoutReceiptPage() {
              </div>
 
              <div className="border border-slate-300 rounded-lg overflow-x-auto bg-slate-200 p-4">
-                <div id="receipt-capture" className="p-10 font-sans border shadow-sm mx-auto my-0 flex flex-col" style={{ width: "794px", height: "900px", minHeight: "900px", backgroundColor: "#ffffff", color: "#000000", borderColor: "#e5e7eb", boxSizing: "border-box" }}>
+                <div id="receipt-capture" className="p-10 font-sans border shadow-sm mx-auto my-0 flex flex-col" style={{ width: "794px", height: "fit-content", minHeight: "1040px", backgroundColor: "#ffffff", color: "#000000", borderColor: "#e5e7eb", boxSizing: "border-box" }}>
                   <div className="text-sm font-bold leading-relaxed mb-6">
                     <p>{companyName || "บริษัท โฮมออฟคราฟ จำกัด (สำนักงานใหญ่)"}</p>
                     <p>{companyAddress || "เลขที่ 35 ถ.นิพัทธ์สงเคราะห์ 4 ต.หาดใหญ่ อ.หาดใหญ่ จ.สงขลา 90110"}</p>

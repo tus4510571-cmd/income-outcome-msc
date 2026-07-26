@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { convertImageToPdfBase64 } from "@/lib/pdfUtils";
+import { convertImageToPdfBase64, mergePdfBase64 } from "@/lib/pdfUtils";
 import { uploadToGoogleDrive } from "@/lib/drive";
 import { getSetting, createTransaction, saveGoogleDriveFileLink } from "@/lib/actions";
 
@@ -94,7 +94,8 @@ export default function CreateEmployeeLaborTransactionPage() {
     setUploadTasks([
       { id: "slip", name: "สลิปโอนเงิน", status: "pending" },
       { id: "id_card", name: "สำเนาบัตรประชาชน", status: "pending" },
-      { id: "receipt", name: "ใบสำคัญรับเงิน", status: "pending" }
+      { id: "receipt", name: "ใบสำคัญรับเงิน", status: "pending" },
+      { id: "merge", name: "รวมไฟล์ทั้งหมดเป็น PDF สรุป", status: "pending" }
     ]);
 
     try {
@@ -115,6 +116,7 @@ export default function CreateEmployeeLaborTransactionPage() {
       ];
 
       const uploadedFiles: { taskId: string, link: string }[] = [];
+      const base64PdfsToMerge: string[] = [];
 
       for (const item of filesToUpload) {
         setUploadTasks(prev => prev.map(t => t.id === item.taskId ? { ...t, status: "uploading" } : t));
@@ -127,6 +129,7 @@ export default function CreateEmployeeLaborTransactionPage() {
           
           // Convert to PDF / Compress
           const pdfBase64 = await convertImageToPdfBase64(dataUrl, item.file.type || "image/jpeg");
+          base64PdfsToMerge.push(pdfBase64);
           const fileName = `${datePrefix}-out-จ้าง-${nickname}-${item.suffix}`;
           
           // Upload to Drive
@@ -153,6 +156,27 @@ export default function CreateEmployeeLaborTransactionPage() {
         }
       }
 
+      // Merge PDFs
+      if (base64PdfsToMerge.length > 0) {
+        setUploadTasks(prev => prev.map(t => t.id === "merge" ? { ...t, status: "uploading" } : t));
+        try {
+          const mergedPdfBase64 = await mergePdfBase64(base64PdfsToMerge);
+          const sumFileName = `${datePrefix}-out-จ้าง-${nickname}-sum`;
+          const res = await uploadToGoogleDrive(mergedPdfBase64, folderId, sumFileName, date, "");
+          if (!res.success) throw new Error(res.error || "Failed to upload merged PDF");
+          setUploadTasks(prev => prev.map(t => t.id === "merge" ? {
+            ...t,
+            status: "success",
+            link: res.link,
+            path: `Outcome/${date.substring(0,7)}/${sumFileName}.pdf`
+          } : t));
+          uploadedFiles.push({ taskId: "merge", link: res.link || "" });
+        } catch (e: any) {
+          setUploadTasks(prev => prev.map(t => t.id === "merge" ? { ...t, status: "error", error: e.message } : t));
+          throw new Error(`รวมไฟล์ไม่สำเร็จ: ${e.message}`);
+        }
+      }
+
       // 1. Create Transaction in Supabase
       const transaction = await createTransaction({
         type: "outcome",
@@ -169,7 +193,8 @@ export default function CreateEmployeeLaborTransactionPage() {
         const fileTypeMap: Record<string, string> = {
           "slip": "transfer_slip",
           "id_card": "id_card_copy",
-          "receipt": "employee_receipt"
+          "receipt": "employee_receipt",
+          "merge": "summary"
         };
         await saveGoogleDriveFileLink(
           transaction.id,

@@ -6,7 +6,7 @@ import ReceiptGenerator from "@/components/ReceiptGenerator";
 import { type ReceiptItem } from "@/lib/types";
 import { createTransaction, addReceiptItems, uploadFile, getSetting, getNextDailySequence, saveGoogleDriveFileLink } from "@/lib/actions";
 import { uploadToGoogleDrive } from "@/lib/drive";
-import { convertImageToPdfBase64 } from "@/lib/pdfUtils";
+import { convertImageToPdfBase64, mergePdfBase64 } from "@/lib/pdfUtils";
 
 export default function NewShopWithReceiptPage() {
   // Step 1: Data
@@ -141,6 +141,10 @@ export default function NewShopWithReceiptPage() {
     if (slipPreview && !paidWithCash) initialTasks.push({ id: "slip", name: "อัปโหลดสลิปการโอนเงิน", status: "pending" });
     if (requireIdCard && idCardPreview) initialTasks.push({ id: "idCard", name: "อัปโหลดสำเนาบัตรประชาชนผู้ขาย", status: "pending" });
     
+    // Summary Merge Task
+    const willHaveMultiple = (receiptPreview ? 1 : 0) + (slipPreview && !paidWithCash ? 1 : 0) + (requireIdCard && idCardPreview ? 1 : 0) > 0;
+    if (willHaveMultiple) initialTasks.push({ id: "merge", name: "รวมไฟล์ทั้งหมดเป็น PDF สรุป", status: "pending" });
+    
     setUploadTasks(initialTasks);
 
     const updateTask = (id: string, updates: Partial<UploadTask>) => {
@@ -168,11 +172,13 @@ export default function NewShopWithReceiptPage() {
       const drivePathPrefix = `${yyyy} > ${driveMonthStr} > ร้านค้ามีใบเสร็จ`;
 
       const uploadedFiles: { type: string; link: string; name: string; path: string }[] = [];
+      const base64PdfsToMerge: string[] = [];
 
       if (receiptPreview && receiptFile) {
         updateTask("receipt", { status: "uploading" });
         try {
           const pdfBase64 = await convertImageToPdfBase64(receiptPreview, receiptFile.type);
+          base64PdfsToMerge.push(pdfBase64);
           const receiptName = `${baseFileName}-ใบเสร็จ`;
           const res = await uploadToGoogleDrive(pdfBase64, folderId, receiptName, date, "ร้านค้ามีใบเสร็จ");
           if (!res.success) throw new Error(res.error || "Failed to upload receipt to Drive");
@@ -188,6 +194,7 @@ export default function NewShopWithReceiptPage() {
         updateTask("slip", { status: "uploading" });
         try {
           const pdfBase64 = await convertImageToPdfBase64(slipPreview, slipFile.type);
+          base64PdfsToMerge.push(pdfBase64);
           const slipFileName = `${baseFileName}-slip`;
           const res = await uploadToGoogleDrive(pdfBase64, folderId, slipFileName, date, "ร้านค้ามีใบเสร็จ");
           if (!res.success) throw new Error(res.error || "Failed to upload slip to Drive");
@@ -203,6 +210,7 @@ export default function NewShopWithReceiptPage() {
         updateTask("idCard", { status: "uploading" });
         try {
           const pdfBase64 = await convertImageToPdfBase64(idCardPreview, idCardFile.type);
+          base64PdfsToMerge.push(pdfBase64);
           const idCardFileName = `${baseFileName}-id`;
           const res = await uploadToGoogleDrive(pdfBase64, folderId, idCardFileName, date, "ร้านค้ามีใบเสร็จ");
           if (!res.success) throw new Error(res.error || "Failed to upload ID card to Drive");
@@ -210,6 +218,23 @@ export default function NewShopWithReceiptPage() {
           updateTask("idCard", { status: "success", link: res.link, path: `${drivePathPrefix} > ${idCardFileName}.pdf` });
         } catch (e) {
           updateTask("idCard", { status: "error", error: (e as Error).message });
+          throw e;
+        }
+      }
+
+      // Merge and Upload Summary PDF
+      if (base64PdfsToMerge.length > 0) {
+        updateTask("merge", { status: "uploading" });
+        try {
+          const mergedPdfBase64 = await mergePdfBase64(base64PdfsToMerge);
+          const sumFileName = `${baseFileName}-sum`;
+          // Passing "" as subfolder puts it in root (month folder)
+          const res = await uploadToGoogleDrive(mergedPdfBase64, folderId, sumFileName, date, "");
+          if (!res.success) throw new Error(res.error || "Failed to upload merged summary PDF to Drive");
+          uploadedFiles.push({ type: "summary", link: res.link, name: sumFileName, path: `${yyyy} > ${driveMonthStr} > ${sumFileName}.pdf` });
+          updateTask("merge", { status: "success", link: res.link, path: `${yyyy} > ${driveMonthStr} > ${sumFileName}.pdf` });
+        } catch (e) {
+          updateTask("merge", { status: "error", error: (e as Error).message });
           throw e;
         }
       }

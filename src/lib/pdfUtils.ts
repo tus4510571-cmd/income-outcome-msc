@@ -74,3 +74,18 @@ export async function convertImageToPdfBase64(base64Image: string, mimeType: str
   const pdfBytes = await pdfDoc.saveAsBase64({ dataUri: true });
   return pdfBytes;
 }
+
+export async function mergePdfBase64(base64Pdfs: string[]): Promise<string> {
+  const mergedPdf = await PDFDocument.create();
+
+  for (const base64 of base64Pdfs) {
+    if (!base64) continue;
+    const pdfData = base64.split(',')[1] || base64;
+    const uint8Array = Uint8Array.from(atob(pdfData), c => c.charCodeAt(0));
+    const pdfDoc = await PDFDocument.load(uint8Array);
+    const copiedPages = await mergedPdf.copyPages(pdfDoc, pdfDoc.getPageIndices());
+    copiedPages.forEach((page) => mergedPdf.addPage(page));
+  }
+
+  return await mergedPdf.saveAsBase64({ dataUri: true });
+}

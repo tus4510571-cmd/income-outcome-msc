@@ -7,7 +7,7 @@ import CashBillGenerator from "@/components/CashBillGenerator";
 import { type ReceiptItem, formatCurrency } from "@/lib/types";
 import { createTransaction, addReceiptItems, uploadFile, getSetting, setSetting, getNextDailySequence, getNextMonthlySequence, saveGoogleDriveFileLink } from "@/lib/actions";
 import { uploadToGoogleDrive } from "@/lib/drive";
-import { convertImageToPdfBase64 } from "@/lib/pdfUtils";
+import { convertImageToPdfBase64, mergePdfBase64 } from "@/lib/pdfUtils";
 import { thaiBahtText } from "@/lib/thaiBaht";
 import { toJpeg } from "html-to-image";
 
@@ -277,6 +277,10 @@ export default function NewShopWithoutReceiptPage() {
     if (isCashBillMode) initialTasks.push({ id: "cashbill", name: "สร้างและอัปโหลดบิลเงินสด", status: "pending" });
     initialTasks.push({ id: "receipt", name: "สร้างและอัปโหลดใบรับรองแทนใบเสร็จ", status: "pending" });
     
+    // Summary Merge Task
+    const willHaveMultiple = (scannedFiles.length > 0 ? 1 : 0) + (slipPreview && !paidWithCash ? 1 : 0) + (isCashBillMode ? 1 : 0) + 1 > 0;
+    if (willHaveMultiple) initialTasks.push({ id: "merge", name: "รวมไฟล์ทั้งหมดเป็น PDF สรุป", status: "pending" });
+    
     setUploadTasks(initialTasks);
 
     const updateTask = (id: string, updates: any) => {
@@ -314,6 +318,7 @@ export default function NewShopWithoutReceiptPage() {
       const drivePathPrefix = `${yyyy} > ${driveMonthStr} > ร้านค้าไม่มีใบเสร็จ`;
 
       const uploadedFiles: { type: string; link: string; name: string; path: string }[] = [];
+      const base64PdfsToMerge: string[] = [];
 
       if (scannedFiles.length > 0) {
         updateTask("card", { status: "uploading" });
@@ -326,6 +331,7 @@ export default function NewShopWithoutReceiptPage() {
               reader.readAsDataURL(f);
             });
             const pdfBase64 = await convertImageToPdfBase64(dataUrl, f.type || "image/jpeg");
+            base64PdfsToMerge.push(pdfBase64);
             const name = scannedFiles.length > 1 ? `${baseFileName}-แนบ-${i+1}` : `${baseFileName}-แนบ`;
             const res = await uploadToGoogleDrive(pdfBase64, folderId, name, date, "ร้านค้าไม่มีใบเสร็จ");
             if (!res.success) throw new Error(res.error || `Failed to upload attached file ${i+1}`);
@@ -342,6 +348,7 @@ export default function NewShopWithoutReceiptPage() {
         updateTask("slip", { status: "uploading" });
         try {
           const pdfBase64 = await convertImageToPdfBase64(slipPreview, slipFile?.type || "image/jpeg");
+          base64PdfsToMerge.push(pdfBase64);
           const slipFileName = `${baseFileName}-slip`;
           const res = await uploadToGoogleDrive(pdfBase64, folderId, slipFileName, date, "ร้านค้าไม่มีใบเสร็จ");
           if (!res.success) throw new Error(res.error || "Failed to upload slip to Drive");
@@ -360,6 +367,7 @@ export default function NewShopWithoutReceiptPage() {
           if (!cashBillElement) throw new Error("Cash bill template not found");
           const cbBase64 = await toJpeg(cashBillElement, { quality: 0.95, pixelRatio: 2 });
           const cbPdfBase64 = await convertImageToPdfBase64(cbBase64, "image/jpeg");
+          base64PdfsToMerge.push(cbPdfBase64);
           const cbFileName = `${baseFileName}-บิลเงินสด`;
           const cbRes = await uploadToGoogleDrive(cbPdfBase64, folderId, cbFileName, date, "ร้านค้าไม่มีใบเสร็จ");
           if (!cbRes.success) throw new Error(cbRes.error || "Failed to upload cash bill to Drive");
@@ -374,6 +382,7 @@ export default function NewShopWithoutReceiptPage() {
       updateTask("receipt", { status: "uploading" });
       try {
         const pdfReceiptBase64 = await convertImageToPdfBase64(receiptBase64, "image/jpeg");
+        base64PdfsToMerge.push(pdfReceiptBase64);
         const receiptFileName = `${baseFileName}-ใบรับรองแทนใบเสร็จรับเงิน`;
         const res = await uploadToGoogleDrive(pdfReceiptBase64, folderId, receiptFileName, date, "ร้านค้าไม่มีใบเสร็จ");
         if (!res.success) throw new Error(res.error || "Failed to upload generated receipt to Drive");
@@ -382,6 +391,22 @@ export default function NewShopWithoutReceiptPage() {
       } catch (e) {
         updateTask("receipt", { status: "error", error: (e as Error).message });
         throw e;
+      }
+
+      // Merge and Upload Summary PDF
+      if (base64PdfsToMerge.length > 0) {
+        updateTask("merge", { status: "uploading" });
+        try {
+          const mergedPdfBase64 = await mergePdfBase64(base64PdfsToMerge);
+          const sumFileName = `${baseFileName}-sum`;
+          const res = await uploadToGoogleDrive(mergedPdfBase64, folderId, sumFileName, date, "");
+          if (!res.success) throw new Error(res.error || "Failed to upload merged summary PDF to Drive");
+          uploadedFiles.push({ type: "summary", link: res.link, name: sumFileName, path: `${yyyy} > ${driveMonthStr} > ${sumFileName}.pdf` });
+          updateTask("merge", { status: "success", link: res.link, path: `${yyyy} > ${driveMonthStr} > ${sumFileName}.pdf` });
+        } catch (e) {
+          updateTask("merge", { status: "error", error: (e as Error).message });
+          throw e;
+        }
       }
 
       // 2. Create Transaction and Database Records ONLY if all uploads succeeded

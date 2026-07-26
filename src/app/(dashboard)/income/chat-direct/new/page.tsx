@@ -7,7 +7,7 @@ import { CURRENCY_OPTIONS, type ReceiptItem } from "@/lib/types";
 import { createTransaction, addReceiptItems, getSetting, saveGoogleDriveFileLink, getNextDailySequence } from "@/lib/actions";
 import { uploadToGoogleDrive } from "@/lib/drive";
 import PreImageUpload, { PreUploadFile } from "@/components/PreImageUpload";
-import { convertImageToPdfBase64 } from "@/lib/pdfUtils";
+import { convertImageToPdfBase64, mergePdfBase64 } from "@/lib/pdfUtils";
 
 export default function NewChatDirectPage() {
   const [customerName, setCustomerName] = useState("");
@@ -66,6 +66,8 @@ export default function NewChatDirectPage() {
 
         setUploadProgress(30);
 
+        const base64PdfsToMerge: string[] = [];
+
         for (let i = 0; i < uploadFiles.length; i++) {
           const fileObj = uploadFiles[i];
           const reader = new FileReader();
@@ -78,13 +80,25 @@ export default function NewChatDirectPage() {
 
           // Convert to PDF
           const pdfBase64 = await convertImageToPdfBase64(base64, fileObj.file.type);
+          base64PdfsToMerge.push(pdfBase64);
           const finalName = uploadFiles.length > 1 ? `${customFileName}-${i+1}` : customFileName;
 
           const res = await uploadToGoogleDrive(pdfBase64, folderId, finalName, date, "ลูกค้าในประเทศ");
           if (res.link) {
             uploadedLinks.push({ link: res.link, name: finalName });
           }
-          setUploadProgress(30 + Math.floor(((i + 1) / uploadFiles.length) * 60));
+          setUploadProgress(30 + Math.floor(((i + 1) / uploadFiles.length) * 50));
+        }
+
+        // Merge PDFs
+        if (base64PdfsToMerge.length > 0) {
+          const mergedPdfBase64 = await mergePdfBase64(base64PdfsToMerge);
+          const sumFileName = `${customFileName}-sum`;
+          // Upload to month root folder (empty subFolder)
+          const res = await uploadToGoogleDrive(mergedPdfBase64, folderId, sumFileName, date, "");
+          if (res.link) {
+            uploadedLinks.push({ link: res.link, name: sumFileName });
+          }
         }
 
         setUploadProgress(100);

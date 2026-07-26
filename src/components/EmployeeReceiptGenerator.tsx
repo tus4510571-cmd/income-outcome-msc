@@ -31,12 +31,12 @@ export default function EmployeeReceiptGenerator({
   taxRate,
 }: EmployeeReceiptGeneratorProps) {
   return (
-    <div id="receipt-capture" className="p-10 font-sans border shadow-sm mx-auto my-0 bg-white text-black text-sm flex flex-col" style={{ width: "794px", height: "1123px", minHeight: "1123px", borderColor: "#e5e7eb", boxSizing: "border-box" }}>
+    <div id="receipt-capture" className="p-8 font-sans border border-black mx-auto my-0 bg-white text-black text-sm flex flex-col" style={{ width: "794px", height: "1123px", minHeight: "1123px", boxSizing: "border-box" }}>
       
       {/* Top Left Company Info */}
-      <div className="mb-6">
-        <h2 className="font-bold">{companyName}</h2>
-        <p>{companyAddress}</p>
+      <div className="mb-4 text-xs font-bold leading-relaxed">
+        <p>{companyName}</p>
+        <p>เลขที่ {companyAddress}</p>
         <p>เลขประจำตัวผู้เสียภาษี {companyTaxId}</p>
       </div>
 
@@ -57,9 +57,9 @@ export default function EmployeeReceiptGenerator({
       </div>
 
       {/* Employee Info */}
-      <div className="mb-8 space-y-5 leading-relaxed">
+      <div className="mb-6 space-y-4 leading-relaxed text-[13px]">
         <div className="flex items-end">
-          <span className="w-20">ข้าพเจ้า</span>
+          <span className="w-20 pl-4">ข้าพเจ้า</span>
           <span className="flex-1 border-b border-black border-dashed px-2 pb-1 text-center">{employeeName}</span>
           <span className="w-48 text-right">(ผู้ขายสินค้า/ให้บริการ/รับว่าจ้าง)</span>
         </div>
@@ -68,13 +68,32 @@ export default function EmployeeReceiptGenerator({
           <span className="w-36">เลขประจำตัวผู้เสียภาษี</span>
           <span className="w-48 border-b border-black border-dashed px-2 pb-1 text-center">{employeeTaxId}</span>
           <span className="w-24 text-center">อยู่บ้านเลขที่</span>
-          <span className="flex-1 border-b border-black border-dashed px-2 pb-1 text-center">{employeeAddress}</span>
+          <span className="w-40 border-b border-black border-dashed px-2 pb-1 text-center">{employeeAddress}</span>
+          <span className="w-12 text-center">หมู่</span>
+          <span className="flex-1 border-b border-black border-dashed px-2 pb-1"></span>
+        </div>
+
+        <div className="flex items-end">
+          <span className="w-16 pl-4">ถนน</span>
+          <span className="flex-1 border-b border-black border-dashed px-2 pb-1 text-center"></span>
+          <span className="w-24 text-center">แขวง/ตำบล</span>
+          <span className="w-40 border-b border-black border-dashed px-2 pb-1 text-center"></span>
+          <span className="w-24 text-center">เขต/อำเภอ</span>
+          <span className="flex-1 border-b border-black border-dashed px-2 pb-1"></span>
+        </div>
+
+        <div className="flex items-end">
+          <span className="w-16 pl-2">จังหวัด</span>
+          <span className="flex-1 border-b border-black border-dashed px-2 pb-1 text-center"></span>
+          <span className="w-16 text-center">โทร</span>
+          <span className="flex-1 border-b border-black border-dashed px-2 pb-1 text-center"></span>
         </div>
         
         <div className="flex items-end">
           <span className="w-24">ได้รับเงินจาก</span>
-          <span className="flex-1 border-b border-black border-dashed px-2 pb-1 text-center">{companyName}</span>
-          <span className="w-64 text-right">(ผู้ซื้อ/ผู้รับบริการ/ผู้ว่าจ้างดังรายการต่อไปนี้)</span>
+          <span className="w-64 border-b border-black border-dashed px-2 pb-1 text-center"></span>
+          <span className="w-48 text-center whitespace-nowrap">ในนามบริษัท {companyName}</span>
+          <span className="flex-1 text-right whitespace-nowrap">(ผู้ซื้อ/ผู้รับบริการ/ผู้ว่าจ้าง ดังรายการต่อไปนี้)</span>
         </div>
       </div>
 

@@ -31,7 +31,7 @@ export default function EmployeeReceiptGenerator({
   taxRate,
 }: EmployeeReceiptGeneratorProps) {
   return (
-    <div id="receipt-capture" className="p-10 font-sans w-[800px] border shadow-sm mx-auto my-0 bg-white text-black text-sm" style={{ minHeight: "1000px", borderColor: "#e5e7eb" }}>
+    <div id="receipt-capture" className="p-10 font-sans border shadow-sm mx-auto my-0 bg-white text-black text-sm flex flex-col" style={{ width: "794px", height: "1123px", minHeight: "1123px", borderColor: "#e5e7eb", boxSizing: "border-box" }}>
       
       {/* Top Left Company Info */}
       <div className="mb-6">
@@ -43,37 +43,37 @@ export default function EmployeeReceiptGenerator({
       <h1 className="text-2xl font-bold text-center mb-8">ใบสำคัญรับเงิน</h1>
 
       {/* Header Info */}
-      <div className="flex justify-end mb-4">
-        <div className="w-64 space-y-2">
-          <div className="flex">
+      <div className="flex justify-end mb-6">
+        <div className="w-64 space-y-3">
+          <div className="flex items-end">
             <span className="w-16">เลขที่</span>
-            <span className="flex-1 border-b border-black border-dashed px-2"></span>
+            <span className="flex-1 border-b border-black border-dashed px-2 pb-1"></span>
           </div>
-          <div className="flex">
+          <div className="flex items-end">
             <span className="w-16">วันที่</span>
-            <span className="flex-1 border-b border-black border-dashed px-2 text-center">{dateString}</span>
+            <span className="flex-1 border-b border-black border-dashed px-2 pb-1 text-center">{dateString}</span>
           </div>
         </div>
       </div>
 
       {/* Employee Info */}
-      <div className="mb-6 space-y-3 leading-relaxed">
-        <div className="flex items-center">
+      <div className="mb-8 space-y-5 leading-relaxed">
+        <div className="flex items-end">
           <span className="w-20">ข้าพเจ้า</span>
-          <span className="flex-1 border-b border-black border-dashed px-2">{employeeName}</span>
-          <span className="w-48 text-center">(ผู้ขายสินค้า/ให้บริการ/รับว่าจ้าง)</span>
+          <span className="flex-1 border-b border-black border-dashed px-2 pb-1 text-center">{employeeName}</span>
+          <span className="w-48 text-right">(ผู้ขายสินค้า/ให้บริการ/รับว่าจ้าง)</span>
         </div>
         
-        <div className="flex items-center">
-          <span className="w-32">เลขประจำตัวผู้เสียภาษี</span>
-          <span className="w-48 border-b border-black border-dashed px-2 text-center">{employeeTaxId}</span>
+        <div className="flex items-end">
+          <span className="w-36">เลขประจำตัวผู้เสียภาษี</span>
+          <span className="w-48 border-b border-black border-dashed px-2 pb-1 text-center">{employeeTaxId}</span>
           <span className="w-24 text-center">อยู่บ้านเลขที่</span>
-          <span className="flex-1 border-b border-black border-dashed px-2">{employeeAddress}</span>
+          <span className="flex-1 border-b border-black border-dashed px-2 pb-1 text-center">{employeeAddress}</span>
         </div>
         
-        <div className="flex items-center">
-          <span className="w-36">ได้รับเงินจาก</span>
-          <span className="flex-1 border-b border-black border-dashed px-2">{companyName}</span>
+        <div className="flex items-end">
+          <span className="w-24">ได้รับเงินจาก</span>
+          <span className="flex-1 border-b border-black border-dashed px-2 pb-1 text-center">{companyName}</span>
           <span className="w-64 text-right">(ผู้ซื้อ/ผู้รับบริการ/ผู้ว่าจ้างดังรายการต่อไปนี้)</span>
         </div>
       </div>
@@ -139,12 +139,12 @@ export default function EmployeeReceiptGenerator({
         <div className="w-64">
           <div className="flex items-end mb-6">
             <span className="w-12">ลงชื่อ</span>
-            <span className="flex-1 border-b border-black border-dashed"></span>
+            <span className="flex-1 border-b border-black border-dashed pb-1"></span>
             <span className="w-16 text-right">ผู้รับเงิน</span>
           </div>
           <div className="flex items-end">
             <span className="w-12">ลงชื่อ</span>
-            <span className="flex-1 border-b border-black border-dashed"></span>
+            <span className="flex-1 border-b border-black border-dashed pb-1"></span>
             <span className="w-16 text-right">ผู้จ่ายเงิน</span>
           </div>
         </div>
@@ -152,11 +152,11 @@ export default function EmployeeReceiptGenerator({
         <div className="w-48">
           <div className="flex items-end mb-6">
             <span className="w-12">วันที่</span>
-            <span className="flex-1 border-b border-black border-dashed"></span>
+            <span className="flex-1 border-b border-black border-dashed pb-1"></span>
           </div>
           <div className="flex items-end">
             <span className="w-12">วันที่</span>
-            <span className="flex-1 border-b border-black border-dashed"></span>
+            <span className="flex-1 border-b border-black border-dashed pb-1"></span>
           </div>
         </div>
       </div>

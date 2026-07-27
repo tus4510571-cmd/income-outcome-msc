@@ -64,12 +64,14 @@ export default function EditTransactionPage() {
 
       if (tx.type === "outcome") {
         console.log("Outcome tx:", tx);
-        let sName = tx.expense_detail?.[0]?.shop_name;
-        let eName = tx.expense_detail?.[0]?.employee_name;
+        const edArray = Array.isArray(tx.expense_detail) ? tx.expense_detail : (tx.expense_detail ? [tx.expense_detail] : []);
+        let sName = edArray[0]?.shop_name;
+        let eName = edArray[0]?.employee_name;
         
         // Fetch from client-side if server-action returned empty due to RLS
-        if (!tx.expense_detail || tx.expense_detail.length === 0) {
-          const { data: ed } = await supabase.from("expense_details").select("*").eq("transaction_id", id).single();
+        if (edArray.length === 0) {
+          const { data: ed, error } = await supabase.from("expense_details").select("*").eq("transaction_id", id).single();
+          console.log("Client ed:", ed, "error:", error);
           if (ed) {
             sName = ed.shop_name;
             eName = ed.employee_name;
@@ -79,13 +81,14 @@ export default function EditTransactionPage() {
         setShopName(sName || "");
         setEmployeeName(eName || "");
       } else {
-        let cName = tx.income_detail?.[0]?.customer_name;
-        let src = tx.income_detail?.[0]?.source;
-        let pg = tx.income_detail?.[0]?.payment_gateway;
-        let inv = tx.income_detail?.[0]?.invoice_ref;
-        let dep = tx.income_detail?.[0]?.deposit_info;
+        const idtArray = Array.isArray(tx.income_detail) ? tx.income_detail : (tx.income_detail ? [tx.income_detail] : []);
+        let cName = idtArray[0]?.customer_name;
+        let src = idtArray[0]?.source;
+        let pg = idtArray[0]?.payment_gateway;
+        let inv = idtArray[0]?.invoice_ref;
+        let dep = idtArray[0]?.deposit_info;
         
-        if (!tx.income_detail || tx.income_detail.length === 0) {
+        if (idtArray.length === 0) {
           const { data: idt } = await supabase.from("income_details").select("*").eq("transaction_id", id).single();
           if (idt) {
             cName = idt.customer_name;

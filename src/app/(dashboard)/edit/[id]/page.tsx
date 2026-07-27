@@ -50,8 +50,6 @@ export default function EditTransactionPage() {
       const tx = await getTransactionById(id);
 
       if (!tx || tx.user_id !== session.user.id) {
-
-      if (!tx) {
         setError("ไม่พบข้อมูลรายการ");
         setLoading(false);
         return;

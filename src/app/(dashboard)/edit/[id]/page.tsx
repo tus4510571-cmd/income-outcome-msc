@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { updateTransaction, updateReceiptItems } from "@/lib/actions";
+import { updateTransaction, updateReceiptItems, getTransactionById } from "@/lib/actions";
 import { CURRENCY_OPTIONS, type ReceiptItem } from "@/lib/types";
 import ReceiptGenerator from "@/components/ReceiptGenerator";
 
@@ -47,19 +47,11 @@ export default function EditTransactionPage() {
         return;
       }
 
-      const { data: tx, error: fetchError } = await supabase
-        .from("transactions")
-        .select(`
-          *,
-          expense_detail:expense_details(*),
-          income_detail:income_details(*),
-          receipt_items:receipt_items(*)
-        `)
-        .eq("id", id)
-        .eq("user_id", session.user.id)
-        .single();
+      const tx = await getTransactionById(id);
 
-      if (fetchError || !tx) {
+      if (!tx || tx.user_id !== session.user.id) {
+
+      if (!tx) {
         setError("ไม่พบข้อมูลรายการ");
         setLoading(false);
         return;
@@ -278,7 +270,6 @@ export default function EditTransactionPage() {
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 className="input-field"
-                min="0"
                 step="0.01"
                 required
                 disabled={hasReceiptItems} // If has receipt items, amount is calculated from items

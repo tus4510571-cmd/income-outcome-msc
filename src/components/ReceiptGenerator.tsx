@@ -99,7 +99,6 @@ export default function ReceiptGenerator({
                   value={item.unit_price}
                   onChange={(e) => updateItem(index, "unit_price", parseFloat(e.target.value) || 0)}
                   className="input-field text-sm py-2"
-                  min="0"
                   step="0.01"
                 />
               </div>

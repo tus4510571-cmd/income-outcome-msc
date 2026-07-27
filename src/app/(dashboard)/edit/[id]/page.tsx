@@ -63,22 +63,51 @@ export default function EditTransactionPage() {
       setDescription(tx.description || "");
 
       if (tx.type === "outcome") {
-        setShopName(tx.expense_detail?.[0]?.shop_name || "");
-        setEmployeeName(tx.expense_detail?.[0]?.employee_name || "");
-      } else {
-        setCustomerName(tx.income_detail?.[0]?.customer_name || "");
-        setSource(tx.income_detail?.[0]?.source || tx.category);
+        console.log("Outcome tx:", tx);
+        let sName = tx.expense_detail?.[0]?.shop_name;
+        let eName = tx.expense_detail?.[0]?.employee_name;
         
-        const pg = tx.income_detail?.[0]?.payment_gateway || "";
+        // Fetch from client-side if server-action returned empty due to RLS
+        if (!tx.expense_detail || tx.expense_detail.length === 0) {
+          const { data: ed } = await supabase.from("expense_details").select("*").eq("transaction_id", id).single();
+          if (ed) {
+            sName = ed.shop_name;
+            eName = ed.employee_name;
+          }
+        }
+        
+        setShopName(sName || "");
+        setEmployeeName(eName || "");
+      } else {
+        let cName = tx.income_detail?.[0]?.customer_name;
+        let src = tx.income_detail?.[0]?.source;
+        let pg = tx.income_detail?.[0]?.payment_gateway;
+        let inv = tx.income_detail?.[0]?.invoice_ref;
+        let dep = tx.income_detail?.[0]?.deposit_info;
+        
+        if (!tx.income_detail || tx.income_detail.length === 0) {
+          const { data: idt } = await supabase.from("income_details").select("*").eq("transaction_id", id).single();
+          if (idt) {
+            cName = idt.customer_name;
+            src = idt.source;
+            pg = idt.payment_gateway;
+            inv = idt.invoice_ref;
+            dep = idt.deposit_info;
+          }
+        }
+        
+        setCustomerName(cName || "");
+        setSource(src || tx.category);
+        
         const GATEWAYS = ["Lian Lian Pay", "Ksher Payment (Tus)", "Stripe (Tus)", "K Shop (May)"];
         if (pg && !GATEWAYS.includes(pg)) {
           setPaymentGateway("Other");
           setCustomGateway(pg);
         } else {
-          setPaymentGateway(pg);
+          setPaymentGateway(pg || "");
         }
-        setInvoiceRef(tx.income_detail?.[0]?.invoice_ref || "");
-        setDepositInfo(tx.income_detail?.[0]?.deposit_info || "");
+        setInvoiceRef(inv || "");
+        setDepositInfo(dep || "");
       }
 
       if (tx.receipt_items && tx.receipt_items.length > 0) {

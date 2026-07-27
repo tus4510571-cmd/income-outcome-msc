@@ -248,14 +248,34 @@ export async function deleteTransaction(id: string) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("ไม่พบผู้ใช้");
 
+  const { data: tx } = await supabase
+    .from("transactions")
+    .select("type, transaction_date")
+    .eq("id", id)
+    .single();
+
   const { data: files } = await supabase
     .from("transaction_files")
     .select("file_path")
     .eq("transaction_id", id);
 
-  if (files && files.length > 0) {
-    const paths = files.map((f) => f.file_path);
-    await supabase.storage.from("transaction-files").remove(paths);
+  if (files && files.length > 0 && tx) {
+    const fileUrls = files.map((f) => f.file_path).filter(p => p.includes("drive.google.com"));
+    
+    if (fileUrls.length > 0) {
+      const folderKey = tx.type === "income" ? "income_drive_folder_id" : "outcome_drive_folder_id";
+      const folderId = await getSetting(folderKey);
+      
+      if (folderId) {
+        const { moveFilesToDeleted } = await import("./drive");
+        await moveFilesToDeleted(fileUrls, folderId, tx.transaction_date);
+      }
+    }
+
+    const paths = files.map((f) => f.file_path).filter(p => !p.includes("drive.google.com"));
+    if (paths.length > 0) {
+      await supabase.storage.from("transaction-files").remove(paths);
+    }
   }
 
   const { error } = await supabase

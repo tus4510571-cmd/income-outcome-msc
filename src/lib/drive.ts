@@ -52,3 +52,41 @@ export async function uploadToGoogleDrive(base64File: string, folderId: string, 
     return { success: false, error: (error as Error).message || "Failed to upload to Google Drive" };
   }
 }
+
+export async function moveFilesToDeleted(fileUrls: string[], folderId: string, transactionDate: string) {
+  try {
+    const gasUrl = await getSetting("google_apps_script_url");
+    if (!gasUrl) {
+      throw new Error("Google Apps Script URL not found. Please connect in Settings.");
+    }
+
+    const response = await fetch(gasUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "text/plain;charset=utf-8",
+      },
+      body: JSON.stringify({
+        action: "moveToDeleted",
+        folderId,
+        fileUrls,
+        transactionDate,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const result = await response.json();
+    
+    if (!result.success) {
+      console.warn("GAS move failed but continuing:", result.error);
+    }
+
+    return { success: true, movedCount: result.movedCount || 0 };
+  } catch (error) {
+    console.error("Google Drive GAS Move Error:", error);
+    // Don't fail the whole transaction deletion if move fails
+    return { success: false, error: (error as Error).message || "Failed to move files in Google Drive" };
+  }
+}

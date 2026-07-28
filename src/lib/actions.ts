@@ -44,6 +44,7 @@ export async function createTransaction(formData: {
   shop_address?: string;
   shop_tax_id?: string;
   employee_name?: string;
+  receipt_number?: string;
   customer_name?: string;
   source?: string;
   payment_gateway?: string;
@@ -77,6 +78,7 @@ export async function createTransaction(formData: {
       shop_address: formData.shop_address || null,
       shop_tax_id: formData.shop_tax_id || null,
       employee_name: formData.employee_name || null,
+      receipt_number: formData.receipt_number || null,
     });
   } else {
     await supabase.from("income_details").insert({
@@ -299,6 +301,7 @@ export async function updateTransaction(
     shop_address?: string;
     shop_tax_id?: string;
     employee_name?: string;
+    receipt_number?: string;
     customer_name?: string;
     source?: string;
     payment_gateway?: string;
@@ -334,6 +337,7 @@ export async function updateTransaction(
         shop_address: formData.shop_address || null,
         shop_tax_id: formData.shop_tax_id || null,
         employee_name: formData.employee_name || null,
+        receipt_number: formData.receipt_number || null,
       })
       .eq("transaction_id", id);
   } else if (tx?.type === "income") {

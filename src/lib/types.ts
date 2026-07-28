@@ -45,6 +45,7 @@ export interface ExpenseDetail {
   shop_address: string | null;
   shop_tax_id: string | null;
   employee_name: string | null;
+  receipt_number?: string | null;
 }
 
 export interface IncomeDetail {

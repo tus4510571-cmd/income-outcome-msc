@@ -22,7 +22,7 @@ export default function NewShopWithoutReceiptPage() {
   const [amount, setAmount] = useState("");
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [items, setItems] = useState<ReceiptItem[]>([
-    { id: "1", product_name: "", quantity: 1, unit_price: 0, currency: "THB" },
+    { id: "1", product_name: "", quantity: 1, unit_price: 0, currency: "THB", transaction_id: "" },
   ]);
   const [manualReceiptNumber, setManualReceiptNumber] = useState("");
   

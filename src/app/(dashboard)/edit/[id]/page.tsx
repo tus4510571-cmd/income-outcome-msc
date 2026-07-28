@@ -117,7 +117,7 @@ export default function EditTransactionPage() {
           }
 
           if (tx.files) {
-            setFileUrls(tx.files.map(f => {
+            setFileUrls((tx.files as any[]).map((f: any) => {
               const match = f.file_path.match(/[-\w]{25,}/);
               return {
                 type: f.file_type,

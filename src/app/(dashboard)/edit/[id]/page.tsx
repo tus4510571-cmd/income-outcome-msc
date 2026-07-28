@@ -85,6 +85,15 @@ export default function EditTransactionPage() {
         let sName = edArray[0]?.shop_name;
         let eName = edArray[0]?.employee_name;
         
+        let parsedReceiptNumber = "";
+        if (tx.files && Array.isArray(tx.files)) {
+          const fileWithPV = tx.files.find((f: any) => f.file_name && f.file_name.includes("PV"));
+          if (fileWithPV) {
+            const match = fileWithPV.file_name.match(/(PV\d+)/);
+            if (match) parsedReceiptNumber = match[1];
+          }
+        }
+
         // Fetch from client-side if server-action returned empty due to RLS
         if (edArray.length === 0) {
           const { data: ed, error } = await supabase.from("expense_details").select("*").eq("transaction_id", id).single();
@@ -92,12 +101,14 @@ export default function EditTransactionPage() {
           if (ed) {
             sName = ed.shop_name;
             eName = ed.employee_name;
-            setReceiptNumber(ed.receipt_number || "");
-            setOriginalReceiptNumber(ed.receipt_number || "");
+            const rn = ed.receipt_number || parsedReceiptNumber || "";
+            setReceiptNumber(rn);
+            setOriginalReceiptNumber(rn);
           }
         } else {
-          setReceiptNumber(edArray[0]?.receipt_number || "");
-          setOriginalReceiptNumber(edArray[0]?.receipt_number || "");
+          const rn = edArray[0]?.receipt_number || parsedReceiptNumber || "";
+          setReceiptNumber(rn);
+          setOriginalReceiptNumber(rn);
         }
         
         setShopName(sName || "");

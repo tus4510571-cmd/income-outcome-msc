@@ -54,6 +54,7 @@ export default function EditTransactionPage() {
   const [approverName, setApproverName] = useState("");
   const [savedNames, setSavedNames] = useState<string[]>([]);
   const [fileUrls, setFileUrls] = useState<{ type: string; url: string; fileId: string; name: string }[]>([]);
+  const [branchName, setBranchName] = useState("");
 
   useEffect(() => {
     async function loadData() {
@@ -146,6 +147,7 @@ export default function EditTransactionPage() {
         let pg = idtArray[0]?.payment_gateway;
         let inv = idtArray[0]?.invoice_ref;
         let dep = idtArray[0]?.deposit_info;
+        let brn = idtArray[0]?.branch_name;
         
         if (idtArray.length === 0) {
           const { data: idt } = await supabase.from("income_details").select("*").eq("transaction_id", id).single();
@@ -155,6 +157,7 @@ export default function EditTransactionPage() {
             pg = idt.payment_gateway;
             inv = idt.invoice_ref;
             dep = idt.deposit_info;
+            brn = idt.branch_name;
           }
         }
         
@@ -170,6 +173,7 @@ export default function EditTransactionPage() {
         }
         setInvoiceRef(inv || "");
         setDepositInfo(dep || "");
+        setBranchName(brn || "");
       }
 
       if (tx.receipt_items && tx.receipt_items.length > 0) {
@@ -207,6 +211,7 @@ export default function EditTransactionPage() {
         invoice_ref: invoiceRef || undefined,
         deposit_info: depositInfo || undefined,
         receipt_number: receiptNumber || undefined,
+        branch_name: branchName || undefined,
       });
 
       if (category === "shop_without_receipt" && receiptNumber !== originalReceiptNumber) {
@@ -409,6 +414,19 @@ export default function EditTransactionPage() {
             </div>
           )}
 
+          {transactionType === "income" && category === "branch_transfer" && (
+            <div>
+              <label className="label">ชื่อสาขา</label>
+              <input
+                type="text"
+                value={branchName}
+                onChange={(e) => setBranchName(e.target.value)}
+                className="input-field"
+                required
+              />
+            </div>
+          )}
+
           {transactionType === "income" && category === "payment_link" && (
             <>
               <div className="grid grid-cols-2 gap-4">
@@ -440,16 +458,6 @@ export default function EditTransactionPage() {
                 )}
               </div>
               <div>
-                <label className="label">เลขที่ใบ Invoice หรือ Quotation</label>
-                <input
-                  type="text"
-                  value={invoiceRef}
-                  onChange={(e) => setInvoiceRef(e.target.value)}
-                  className="input-field"
-                  placeholder="กรอกเลขที่เอกสารอ้างอิง"
-                />
-              </div>
-              <div>
                 <label className="label">มัดจำ งวดที่ / เปอร์เซ็นต์ (%)</label>
                 <input
                   type="text"
@@ -460,6 +468,19 @@ export default function EditTransactionPage() {
                 />
               </div>
             </>
+          )}
+
+          {transactionType === "income" && (category === "payment_link" || category === "chat_direct") && (
+            <div>
+              <label className="label">เลขที่ใบ Invoice หรือ Quotation</label>
+              <input
+                type="text"
+                value={invoiceRef}
+                onChange={(e) => setInvoiceRef(e.target.value)}
+                className="input-field"
+                placeholder="กรอกเลขที่เอกสารอ้างอิง"
+              />
+            </div>
           )}
 
           <div>

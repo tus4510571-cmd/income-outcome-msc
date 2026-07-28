@@ -145,12 +145,26 @@ export default function Sidebar({ mobile, onClose }: { mobile?: boolean; onClose
         </div>
       </nav>
 
-      {/* Settings at the bottom */}
-      <div className="pt-4 border-t border-slate-100 mt-4">
+      {/* Settings and Logout at the bottom */}
+      <div className="pt-4 border-t border-slate-100 mt-4 space-y-1">
         <Link href="/settings" className={navLinkClass("/settings")}>
           <Settings className={iconClass("/settings")} />
           การตั้งค่า
         </Link>
+        <button 
+          onClick={async () => {
+            const { createClient } = await import("@/lib/supabase/client");
+            const supabase = createClient();
+            await supabase.auth.signOut();
+            window.location.href = "/login";
+          }}
+          className="w-full flex items-center gap-3 py-2 px-3 rounded-md text-[14px] font-medium text-red-600 hover:bg-red-50 transition-colors"
+        >
+          <svg className="w-[18px] h-[18px] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+          </svg>
+          ออกจากระบบ
+        </button>
       </div>
     </div>
   );

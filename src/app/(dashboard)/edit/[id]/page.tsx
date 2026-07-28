@@ -96,21 +96,36 @@ export default function EditTransactionPage() {
         }
 
         // Fetch from client-side if server-action returned empty due to RLS
+        let rn = "";
         if (edArray.length === 0) {
           const { data: ed, error } = await supabase.from("expense_details").select("*").eq("transaction_id", id).single();
           console.log("Client ed:", ed, "error:", error);
           if (ed) {
             sName = ed.shop_name;
             eName = ed.employee_name;
-            const rn = ed.receipt_number || parsedReceiptNumber || "";
-            setReceiptNumber(rn);
-            setOriginalReceiptNumber(rn);
+            rn = ed.receipt_number || parsedReceiptNumber || "";
           }
         } else {
-          const rn = edArray[0]?.receipt_number || parsedReceiptNumber || "";
-          setReceiptNumber(rn);
-          setOriginalReceiptNumber(rn);
+          rn = edArray[0]?.receipt_number || parsedReceiptNumber || "";
         }
+        
+        if (!rn && tx.category === "shop_without_receipt") {
+          const prefix = tx.transaction_date.substring(0, 7);
+          const { count } = await supabase
+            .from("transactions")
+            .select("id", { count: "exact", head: true })
+            .like("transaction_date", `${prefix}%`)
+            .lte("created_at", tx.created_at);
+            
+          if (count) {
+            const seq = String(count).padStart(4, "0");
+            const txDate = new Date(tx.transaction_date);
+            rn = `PV${String(txDate.getFullYear() + 543).slice(2)}${String(txDate.getMonth() + 1).padStart(2, '0')}${seq}`;
+          }
+        }
+        
+        setReceiptNumber(rn);
+        setOriginalReceiptNumber(rn);
         
         setShopName(sName || "");
         setEmployeeName(eName || "");

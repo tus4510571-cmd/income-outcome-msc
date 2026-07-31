@@ -505,6 +505,7 @@ export default function EditTransactionPage() {
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               className="input-field"
+              required
             />
           </div>
 

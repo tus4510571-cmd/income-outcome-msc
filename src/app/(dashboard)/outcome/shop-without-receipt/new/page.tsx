@@ -416,7 +416,7 @@ export default function NewShopWithoutReceiptPage() {
 
       // 2. Create Transaction and Database Records ONLY if all uploads succeeded
       updateTask("db", { status: "uploading" });
-      const finalDescription = [platform && platform !== "Other" ? platform : "", description].filter(Boolean).join(" ");
+      const finalDescription = [platform && platform !== "อื่นๆ" ? platform : "", description].filter(Boolean).join(" ");
       const transaction = await createTransaction({
         type: "outcome",
         category: "shop_without_receipt",
@@ -455,7 +455,7 @@ export default function NewShopWithoutReceiptPage() {
     }
   };
 
-  const canSubmit = items.length > 0 && shopName && amount && (paidWithCash || slipPreview);
+  const canSubmit = items.length > 0 && shopName && amount && description && (paidWithCash || slipPreview);
   
   const txDate = new Date(date);
   const dateString = `${String(txDate.getDate()).padStart(2, '0')}-${String(txDate.getMonth() + 1).padStart(2, '0')}-${txDate.getFullYear() + 543}`;
@@ -603,7 +603,7 @@ export default function NewShopWithoutReceiptPage() {
               )}
             </div>
               <div className="md:col-span-2">
-                <label className="label">รายละเอียด (ไม่บังคับ)</label>
+                <label className="label">รายละเอียด</label>
                 <div className="flex gap-2">
                   <select
                     className="input-field max-w-[150px] cursor-pointer"
@@ -612,10 +612,8 @@ export default function NewShopWithoutReceiptPage() {
                   >
                     <option value="">(ระบุที่มา)</option>
                     <option value="Shopee">Shopee</option>
-                    <option value="Lazada">Lazada</option>
-                    <option value="TiktokShop">TiktokShop</option>
-                    <option value="FB">FB</option>
-                    <option value="Other">อื่นๆ</option>
+                    <option value="ติดต่อด้วยตัวเอง">ติดต่อด้วยตัวเอง</option>
+                    <option value="อื่นๆ">อื่นๆ</option>
                   </select>
                   <input
                     type="text"
@@ -623,6 +621,7 @@ export default function NewShopWithoutReceiptPage() {
                     onChange={(e) => setDescription(e.target.value)}
                     className="input-field"
                     placeholder="พิมพ์รายละเอียดเพิ่มเติม เช่น ค่าจัดส่งพัสดุ"
+                    required
                   />
                 </div>
               </div>

@@ -307,11 +307,11 @@ export default function NewShopWithoutReceiptPage() {
       
       const receiptBase64 = await toJpeg(receiptElement, { quality: 0.95, pixelRatio: 2 });
 
-      const dateObj = new Date(date);
-      const yyyy = dateObj.getFullYear();
+      const [yyyyStr, mmStr, ddStr] = date.split('-');
+      const yyyy = parseInt(yyyyStr);
       const yy = String(yyyy).slice(2);
-      const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
-      const dd = String(dateObj.getDate()).padStart(2, '0');
+      const mm = mmStr.padStart(2, '0');
+      const dd = ddStr.padStart(2, '0');
       
       const filePrefix = `${dd}${mm}${yyyy}${dailySeq}`;
       const rawSafeShopName = shopName ? shopName.replace(/[^a-zA-Z0-9ก-๙\s-]/g, "").trim().replace(/\s+/g, "_") : "ไม่ระบุ";
@@ -319,7 +319,7 @@ export default function NewShopWithoutReceiptPage() {
       const baseFileName = `${filePrefix}-OUT-ไม่มีบิล-${safeShopName}`;
 
       const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-      const driveMonthStr = `${String(dateObj.getMonth() + 1).padStart(2, '0')} ${months[dateObj.getMonth()]}`;
+      const driveMonthStr = `${mm} ${months[parseInt(mm) - 1]}`;
       const drivePathPrefix = `${yyyy} > ${driveMonthStr} > ร้านค้าไม่มีใบเสร็จ`;
 
       const uploadedFiles: { type: string; link: string; name: string; path: string }[] = [];
@@ -457,9 +457,12 @@ export default function NewShopWithoutReceiptPage() {
 
   const canSubmit = items.length > 0 && shopName && amount && description && (paidWithCash || slipPreview);
   
-  const txDate = new Date(date);
-  const dateString = `${String(txDate.getDate()).padStart(2, '0')}-${String(txDate.getMonth() + 1).padStart(2, '0')}-${txDate.getFullYear() + 543}`;
-  const defaultInvoiceNumber = `PV${String(txDate.getFullYear() + 543).slice(2)}${String(txDate.getMonth() + 1).padStart(2, '0')}${monthlySeq}`;
+  const [yyyyStr, mmStr, ddStr] = date.split('-');
+  const yyyyNum = parseInt(yyyyStr);
+  const mmNum = parseInt(mmStr);
+  const ddNum = parseInt(ddStr);
+  const dateString = `${String(ddNum).padStart(2, '0')}-${String(mmNum).padStart(2, '0')}-${yyyyNum + 543}`;
+  const defaultInvoiceNumber = `PV${String(yyyyNum + 543).slice(2)}${String(mmNum).padStart(2, '0')}${monthlySeq}`;
   const invoiceNumber = manualReceiptNumber || defaultInvoiceNumber;
   const totalAmount = items.reduce((sum, item) => sum + item.quantity * item.unit_price, 0);
 

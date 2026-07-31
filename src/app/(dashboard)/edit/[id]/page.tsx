@@ -573,7 +573,10 @@ export default function EditTransactionPage() {
                companyAddress={companyAddress}
                companyTaxId={companyTaxId}
                invoiceNumber={receiptNumber}
-               dateString={new Date(date).toLocaleDateString("th-TH", { year: "numeric", month: "short", day: "numeric" })}
+               dateString={(() => {
+                 const [yyyyStr, mmStr, ddStr] = date.split('-');
+                 return new Date(parseInt(yyyyStr), parseInt(mmStr) - 1, parseInt(ddStr), 12).toLocaleDateString("th-TH", { year: "numeric", month: "short", day: "numeric" });
+               })()}
                employeeName={employeeName}
                employeePosition={"พนักงาน"}
                totalAmount={parseFloat(amount) || 0}

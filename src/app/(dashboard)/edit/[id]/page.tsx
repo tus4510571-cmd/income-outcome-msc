@@ -29,6 +29,7 @@ export default function EditTransactionPage() {
   const [currency, setCurrency] = useState("THB");
   const [date, setDate] = useState("");
   const [description, setDescription] = useState("");
+  const [platform, setPlatform] = useState("");
   
   // Specific fields
   const [shopName, setShopName] = useState("");
@@ -78,7 +79,19 @@ export default function EditTransactionPage() {
       setAmount(tx.amount.toString());
       setCurrency(tx.currency);
       setDate(tx.transaction_date);
-      setDescription(tx.description || "");
+
+      let loadedPlatform = "";
+      let loadedDesc = tx.description || "";
+      if (loadedDesc.startsWith("Shopee ")) {
+        loadedPlatform = "Shopee";
+        loadedDesc = loadedDesc.replace("Shopee ", "");
+      } else if (loadedDesc.startsWith("ติดต่อด้วยตัวเอง ")) {
+        loadedPlatform = "ติดต่อด้วยตัวเอง";
+        loadedDesc = loadedDesc.replace("ติดต่อด้วยตัวเอง ", "");
+      }
+      
+      setPlatform(loadedPlatform);
+      setDescription(loadedDesc);
 
       if (tx.type === "outcome") {
         console.log("Outcome tx:", tx);
@@ -212,12 +225,13 @@ export default function EditTransactionPage() {
 
     try {
       const finalGateway = paymentGateway === "Other" ? customGateway : paymentGateway;
+      const finalDescription = [platform && platform !== "อื่นๆ" ? platform : "", description].filter(Boolean).join(" ");
       
       await updateTransaction(id, {
         amount: parseFloat(amount) || 0,
         currency,
         transaction_date: date,
-        description,
+        description: finalDescription,
         shop_name: shopName,
         employee_name: employeeName,
         customer_name: customerName,
@@ -347,6 +361,22 @@ export default function EditTransactionPage() {
                   required
                 />
               </div>
+              
+              {category === "shop_without_receipt" && (
+                <div>
+                  <label className="label">ระบุที่มา</label>
+                  <select
+                    value={platform}
+                    onChange={(e) => setPlatform(e.target.value)}
+                    className="input-field mb-2"
+                  >
+                    <option value="">(ระบุที่มา)</option>
+                    <option value="Shopee">Shopee</option>
+                    <option value="ติดต่อด้วยตัวเอง">ติดต่อด้วยตัวเอง</option>
+                    <option value="อื่นๆ">อื่นๆ</option>
+                  </select>
+                </div>
+              )}
               
               {category === "shop_without_receipt" && (
                 <div>

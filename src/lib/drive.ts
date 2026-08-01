@@ -31,7 +31,7 @@ export async function uploadToGoogleDrive(base64File: string, folderId: string, 
         fileName,
         mimeType,
         base64Data,
-        transactionDate,
+        transactionDate: transactionDate ? (transactionDate.includes("T") ? transactionDate : `${transactionDate}T12:00:00`) : undefined,
         subFolder,
       }),
     });
@@ -74,7 +74,7 @@ export async function moveFilesToDeleted(fileUrls: string[], folderId: string, t
         action: "moveToDeleted",
         folderId,
         fileIds,
-        transactionDate,
+        transactionDate: transactionDate ? (transactionDate.includes("T") ? transactionDate : `${transactionDate}T12:00:00`) : undefined,
       }),
     });
 
@@ -126,7 +126,7 @@ export async function overwriteInGoogleDrive(base64File: string, fileIdToTrash: 
         fileName,
         mimeType,
         base64Data,
-        transactionDate,
+        transactionDate: transactionDate ? (transactionDate.includes("T") ? transactionDate : `${transactionDate}T12:00:00`) : undefined,
         subFolder,
       }),
     });

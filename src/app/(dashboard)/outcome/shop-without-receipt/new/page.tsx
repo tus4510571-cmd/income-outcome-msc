@@ -8,7 +8,7 @@ import ReceiptCaptureTemplate from "@/components/ReceiptCaptureTemplate";
 import { type ReceiptItem, formatCurrency } from "@/lib/types";
 import { createTransaction, addReceiptItems, uploadFile, getSetting, setSetting, getNextDailySequence, getNextMonthlySequence, saveGoogleDriveFileLink } from "@/lib/actions";
 import { uploadToGoogleDrive } from "@/lib/drive";
-import { convertImageToPdfBase64, mergePdfBase64 } from "@/lib/pdfUtils";
+import { convertImageToPdfBase64, mergePdfBase64, compressImageBase64 } from "@/lib/pdfUtils";
 import { thaiBahtText } from "@/lib/thaiBaht";
 import { toJpeg } from "html-to-image";
 
@@ -216,25 +216,41 @@ export default function NewShopWithoutReceiptPage() {
     reader.readAsDataURL(file);
   };
 
-  const handleScanReceipt = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAddScanFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
+    
+    const newFiles = Array.from(files);
+    setScannedFiles(prev => [...prev, ...newFiles]);
+    if (scanInputRef.current) scanInputRef.current.value = "";
+  };
+
+  const performAIScan = async () => {
+    if (scannedFiles.length === 0) return;
     
     setIsScanning(true);
     setScanError("");
     
-    const fileArray = Array.from(files);
-    setScannedFiles(fileArray);
-    
-    // Preview the first file
-    setBusinessCardFile(fileArray[0]);
-    const reader = new FileReader();
-    reader.onload = () => setBusinessCardPreview(reader.result as string);
-    reader.readAsDataURL(fileArray[0]);
-    
     try {
+      // Compress files before sending to AI to avoid 4.5MB Payload limit
+      const compressedBlobs = await Promise.all(scannedFiles.map(async (f) => {
+        if (f.type === "application/pdf") return f;
+        
+        const dataUrl = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(f);
+        });
+        
+        const compressedDataUrl = await compressImageBase64(dataUrl, f.type || "image/jpeg", 1600, 0.8);
+        const res = await fetch(compressedDataUrl);
+        const blob = await res.blob();
+        return new File([blob], f.name, { type: "image/jpeg" });
+      }));
+
       const formData = new FormData();
-      fileArray.forEach(f => formData.append("receipt", f));
+      compressedBlobs.forEach(blob => formData.append("receipt", blob));
       
       const res = await fetch("/api/scan-receipt", {
         method: "POST",
@@ -266,7 +282,6 @@ export default function NewShopWithoutReceiptPage() {
       setScanError((err as Error).message);
     } finally {
       setIsScanning(false);
-      if (scanInputRef.current) scanInputRef.current.value = "";
     }
   };
 
@@ -558,15 +573,46 @@ export default function NewShopWithoutReceiptPage() {
                 multiple
                 className="hidden" 
                 ref={scanInputRef}
-                onChange={handleScanReceipt}
+                onChange={handleAddScanFile}
               />
               <button 
                 onClick={() => scanInputRef.current?.click()}
                 disabled={isScanning}
-                className="btn-primary shadow-md shadow-indigo-200 px-8 py-3 rounded-full"
+                className="btn-outline px-8 py-3 rounded-full mb-4 border-indigo-200 text-indigo-700 hover:bg-indigo-50"
               >
-                {isScanning ? "กำลังให้ AI อ่านข้อมูล... ⏳" : "เลือกรูปภาพบิลเงินสด/นามบัตร"}
+                + เพิ่มรูปภาพบิลเงินสด/นามบัตร
               </button>
+              
+              {scannedFiles.length > 0 && (
+                <div className="flex flex-wrap gap-4 justify-center mb-6">
+                  {scannedFiles.map((file, idx) => (
+                    <div key={idx} className="relative group animate-in fade-in zoom-in-95">
+                      <p className="text-xs text-indigo-600 mb-1 font-medium truncate w-24">ไฟล์ที่ {idx+1}</p>
+                      {file.type === "application/pdf" ? (
+                        <div className="h-24 w-24 bg-red-50 text-red-600 rounded-lg border border-slate-200 flex items-center justify-center font-bold shadow-sm">PDF</div>
+                      ) : (
+                        <img src={URL.createObjectURL(file)} className="h-24 w-24 object-cover rounded-lg border border-slate-200 shadow-sm" alt="preview" />
+                      )}
+                      {!isScanning && (
+                        <button 
+                          onClick={() => setScannedFiles(prev => prev.filter((_, i) => i !== idx))} 
+                          className="absolute top-4 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity shadow-sm"
+                        >✕</button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {scannedFiles.length > 0 && (
+                <button 
+                  onClick={performAIScan}
+                  disabled={isScanning}
+                  className="btn-primary bg-emerald-600 hover:bg-emerald-700 shadow-md shadow-emerald-200 px-8 py-3 rounded-full w-full max-w-sm mt-2 animate-in fade-in"
+                >
+                  {isScanning ? "กำลังให้ AI อ่านข้อมูล... ⏳" : "✨ สแกนข้อมูลด้วย AI"}
+                </button>
+              )}
               {scanError && <p className="text-red-500 text-sm mt-3">{scanError}</p>}
             </div>
 

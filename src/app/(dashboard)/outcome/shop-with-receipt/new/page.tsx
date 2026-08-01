@@ -75,10 +75,6 @@ export default function NewShopWithReceiptPage() {
     const reader = new FileReader();
     reader.onload = () => setReceiptPreview(reader.result as string);
     reader.readAsDataURL(file);
-    
-    if (!hasItemList) {
-      performAIScan([file]);
-    }
   };
 
   const handleItemListChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -474,10 +470,10 @@ export default function NewShopWithReceiptPage() {
                   </div>
                 )}
 
-                {hasItemList && (receiptFile || itemListFile) && (
+                {(receiptFile || itemListFile) && (
                   <button 
                     onClick={handleManualScan}
-                    disabled={isScanning || (!receiptFile && !itemListFile)}
+                    disabled={isScanning}
                     className="btn-primary bg-emerald-600 hover:bg-emerald-700 shadow-md shadow-emerald-200 px-8 py-3 rounded-full w-full max-w-sm mt-2 animate-in fade-in"
                   >
                     {isScanning ? "กำลังให้ AI อ่านข้อมูล... ⏳" : "✨ สแกนข้อมูลด้วย AI"}

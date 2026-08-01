@@ -6,7 +6,7 @@ import ReceiptGenerator from "@/components/ReceiptGenerator";
 import { type ReceiptItem } from "@/lib/types";
 import { createTransaction, addReceiptItems, uploadFile, getSetting, getNextDailySequence, saveGoogleDriveFileLink } from "@/lib/actions";
 import { uploadToGoogleDrive } from "@/lib/drive";
-import { convertImageToPdfBase64, mergePdfBase64 } from "@/lib/pdfUtils";
+import { convertImageToPdfBase64, mergePdfBase64, compressImageBase64 } from "@/lib/pdfUtils";
 
 export default function NewShopWithReceiptPage() {
   // Step 1: Data
@@ -105,8 +105,25 @@ export default function NewShopWithReceiptPage() {
     setScanError("");
     
     try {
+      // Compress files before sending to AI to avoid 4.5MB Payload limit
+      const compressedBlobs = await Promise.all(files.map(async (f) => {
+        if (f.type === "application/pdf") return f; // Don't compress PDFs here
+        
+        const dataUrl = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(f);
+        });
+        
+        const compressedDataUrl = await compressImageBase64(dataUrl, f.type || "image/jpeg", 1600, 0.8);
+        const res = await fetch(compressedDataUrl);
+        const blob = await res.blob();
+        return new File([blob], f.name, { type: "image/jpeg" });
+      }));
+
       const formData = new FormData();
-      files.forEach(f => formData.append("receipt", f));
+      compressedBlobs.forEach(blob => formData.append("receipt", blob));
       
       const res = await fetch("/api/scan-receipt", {
         method: "POST",

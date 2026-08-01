@@ -60,6 +60,11 @@ export async function moveFilesToDeleted(fileUrls: string[], folderId: string, t
       throw new Error("Google Apps Script URL not found. Please connect in Settings.");
     }
 
+    const fileIds = fileUrls.map(url => {
+      const match = url.match(/[-\w]{25,}/);
+      return match ? match[0] : null;
+    }).filter(Boolean);
+
     const response = await fetch(gasUrl, {
       method: "POST",
       headers: {
@@ -68,7 +73,7 @@ export async function moveFilesToDeleted(fileUrls: string[], folderId: string, t
       body: JSON.stringify({
         action: "moveToDeleted",
         folderId,
-        fileUrls,
+        fileIds,
         transactionDate,
       }),
     });

@@ -436,7 +436,7 @@ export default function NewShopWithReceiptPage() {
                   disabled={isScanning}
                   className="btn-primary shadow-md shadow-indigo-200 px-8 py-3 rounded-full w-full max-w-sm"
                 >
-                  {isScanning ? "กำลังให้ AI อ่านข้อมูล... ⏳" : (receiptFile ? "เปลี่ยนรูปภาพใบเสร็จ" : "1. เลือกรูปภาพใบเสร็จรับเงิน/ใบกำกับภาษี")}
+                  {isScanning ? "กำลังให้ AI อ่านข้อมูล... ⏳" : (receiptFile ? "เปลี่ยนรูปภาพใบเสร็จ" : "1. คลิกที่นี่สำหรับรูปใบเสร็จรับเงิน/ใบกำกับภาษี")}
                 </button>
                 
                 <label className="flex items-center gap-2 cursor-pointer text-sm text-indigo-700 bg-white/50 px-4 py-2 rounded-lg border border-indigo-100 w-full max-w-sm">
@@ -469,7 +469,7 @@ export default function NewShopWithReceiptPage() {
                       disabled={isScanning}
                       className="btn-outline w-full px-8 py-3 rounded-full border-indigo-200 text-indigo-700 hover:bg-indigo-50"
                     >
-                      {itemListFile ? "เปลี่ยนรูปภาพรายการสินค้า" : "2. เลือกรูปภาพรายการสินค้า"}
+                      {itemListFile ? "เปลี่ยนรูปภาพรายการสินค้า" : "2. คลิกที่นี่สำหรับเพิ่มรายการสินค้าหรือไฟล์ที่เกี่ยวข้อง"}
                     </button>
                   </div>
                 )}

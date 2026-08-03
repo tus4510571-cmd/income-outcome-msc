@@ -2,9 +2,14 @@ import { getSetting } from "./actions";
 
 export async function uploadToGoogleDrive(base64File: string, folderId: string, customFileName?: string, transactionDate?: string, subFolder?: string) {
   try {
-    const gasUrl = await getSetting("google_apps_script_url");
+    let gasUrl = await getSetting("google_apps_script_url");
     if (!gasUrl) {
       throw new Error("Google Apps Script URL not found. Please connect in Settings.");
+    }
+    
+    // Auto-fix http to https to prevent 301/302 redirects which change POST to GET
+    if (gasUrl.startsWith("http://")) {
+      gasUrl = gasUrl.replace("http://", "https://");
     }
 
     // Extract mime type and base64 data
@@ -40,7 +45,16 @@ export async function uploadToGoogleDrive(base64File: string, folderId: string, 
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
-    const result = await response.json();
+    const responseText = await response.text();
+    let result;
+    try {
+      result = JSON.parse(responseText);
+    } catch (e) {
+      if (responseText.includes("IncomeOutcome GAS API is running")) {
+        throw new Error("Google Apps Script URL ไม่ถูกต้อง หรือเป็น Short URL (ทำให้ถูกแปลง POST เป็น GET) กรุณาตรวจสอบ URL ในหน้าตั้งค่าให้เป็นลิงก์ตรงที่ขึ้นต้นด้วย https://script.google.com");
+      }
+      throw new Error(`การตอบกลับผิดพลาด: ${responseText.substring(0, 50)}...`);
+    }
     
     if (!result.success || !result.fileId || !result.link) {
       throw new Error(result.error || "อัปโหลดผ่านระบบเครือข่ายสำเร็จ แต่ไม่ได้รับรหัสไฟล์กลับมา (อาจเกิดจากชื่อไฟล์ยาวเกินไป กรุณาตั้งชื่อร้านให้สั้นลง)");
@@ -55,9 +69,13 @@ export async function uploadToGoogleDrive(base64File: string, folderId: string, 
 
 export async function moveFilesToDeleted(fileUrls: string[], folderId: string, transactionDate: string) {
   try {
-    const gasUrl = await getSetting("google_apps_script_url");
+    let gasUrl = await getSetting("google_apps_script_url");
     if (!gasUrl) {
       throw new Error("Google Apps Script URL not found. Please connect in Settings.");
+    }
+
+    if (gasUrl.startsWith("http://")) {
+      gasUrl = gasUrl.replace("http://", "https://");
     }
 
     const fileIds = fileUrls.map(url => {
@@ -82,7 +100,16 @@ export async function moveFilesToDeleted(fileUrls: string[], folderId: string, t
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
-    const result = await response.json();
+    const responseText = await response.text();
+    let result;
+    try {
+      result = JSON.parse(responseText);
+    } catch (e) {
+      if (responseText.includes("IncomeOutcome GAS API is running")) {
+        throw new Error("Google Apps Script URL ไม่ถูกต้อง หรือเป็น Short URL (ทำให้ถูกแปลง POST เป็น GET) กรุณาตรวจสอบ URL ในหน้าตั้งค่าให้เป็นลิงก์ตรงที่ขึ้นต้นด้วย https://script.google.com");
+      }
+      throw new Error(`การตอบกลับผิดพลาด: ${responseText.substring(0, 50)}...`);
+    }
     
     if (!result.success) {
       console.warn("GAS move failed but continuing:", result.error);

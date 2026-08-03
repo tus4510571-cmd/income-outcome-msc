@@ -23,6 +23,10 @@ export default function LoginPage() {
         password,
       });
       if (error) throw error;
+      
+      // Set initial activity cookie
+      document.cookie = `last-activity=${Date.now()}; path=/; max-age=900; SameSite=Lax`;
+      
       router.push("/");
       router.refresh();
     } catch (err) {

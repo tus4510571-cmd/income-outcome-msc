@@ -39,7 +39,7 @@ export default function NewChatDirectPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (items.length === 0 || items.every((i) => !i.product_name)) {
-      setError("กรุณาเพิ่มรายการสินค้าอย่างน้อย 1 รายการ");
+      alert("ไม่สามารถดำเนินการได้ กรุณาเพิ่มรายการสินค้าอย่างน้อย 1 รายการ");
       return;
     }
     

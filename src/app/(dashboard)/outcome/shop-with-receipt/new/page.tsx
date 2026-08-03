@@ -21,13 +21,11 @@ export default function NewShopWithReceiptPage() {
   // Step 2: Files & Options
   const [paidWithCash, setPaidWithCash] = useState(false);
   
-  const [receiptPreview, setReceiptPreview] = useState<string | null>(null);
-  const [receiptFile, setReceiptFile] = useState<File | null>(null);
+  const [receiptFiles, setReceiptFiles] = useState<File[]>([]);
   const scanInputRef = useRef<HTMLInputElement>(null);
 
   const [hasItemList, setHasItemList] = useState(false);
-  const [itemListPreview, setItemListPreview] = useState<string | null>(null);
-  const [itemListFile, setItemListFile] = useState<File | null>(null);
+  const [itemListFiles, setItemListFiles] = useState<File[]>([]);
   const itemListInputRef = useRef<HTMLInputElement>(null);
 
   const [slipPreview, setSlipPreview] = useState<string | null>(null);
@@ -68,29 +66,23 @@ export default function NewShopWithReceiptPage() {
   }, [date]);
 
   const handleReceiptChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    
-    setReceiptFile(file);
-    const reader = new FileReader();
-    reader.onload = () => setReceiptPreview(reader.result as string);
-    reader.readAsDataURL(file);
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    setReceiptFiles(prev => [...prev, ...Array.from(files)]);
+    if (scanInputRef.current) scanInputRef.current.value = "";
   };
 
   const handleItemListChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    
-    setItemListFile(file);
-    const reader = new FileReader();
-    reader.onload = () => setItemListPreview(reader.result as string);
-    reader.readAsDataURL(file);
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    setItemListFiles(prev => [...prev, ...Array.from(files)]);
+    if (itemListInputRef.current) itemListInputRef.current.value = "";
   };
 
   const handleManualScan = () => {
     const filesToScan: File[] = [];
-    if (receiptFile) filesToScan.push(receiptFile);
-    if (itemListFile) filesToScan.push(itemListFile);
+    if (receiptFiles.length > 0) filesToScan.push(...receiptFiles);
+    if (itemListFiles.length > 0) filesToScan.push(...itemListFiles);
     
     if (filesToScan.length === 0) return;
     performAIScan(filesToScan);
@@ -175,19 +167,32 @@ export default function NewShopWithReceiptPage() {
   };
 
   const handleFinalSubmit = async () => {
+    if (!canSubmit) {
+      const missingFields = [];
+      if (items.length === 0) missingFields.push("รายการสินค้า (ต้องมีอย่างน้อย 1 รายการ)");
+      if (!shopName) missingFields.push("ชื่อร้านค้า");
+      if (!amount) missingFields.push("ยอดเงินรวม");
+      if (!paidWithCash && !slipPreview) missingFields.push("รูปสลิปโอนเงิน (ถ้าไม่ได้จ่ายเงินสด)");
+      if (receiptFiles.length === 0) missingFields.push("รูปใบเสร็จรับเงิน/ใบกำกับภาษี");
+      if (requireIdCard && !idCardPreview) missingFields.push("รูปบัตรประชาชน (กรณีชื่อร้านเป็นบุคคลธรรมดา)");
+      
+      alert("ไม่สามารถบันทึกได้ กรุณากรอกข้อมูล/แนบไฟล์ต่อไปนี้ให้ครบถ้วน:\\n- " + missingFields.join("\\n- "));
+      return;
+    }
+    
     setUploadStatus("uploading");
     setUploadError("");
 
     const initialTasks: UploadTask[] = [
       { id: "db", name: "สร้างรายการในฐานข้อมูล", status: "uploading" }
     ];
-    if (receiptPreview) initialTasks.push({ id: "receipt", name: "อัปโหลดใบเสร็จรับเงิน/ใบกำกับภาษี", status: "pending" });
-    if (hasItemList && itemListPreview) initialTasks.push({ id: "itemList", name: "อัปโหลดไฟล์รายการสินค้า", status: "pending" });
+    if (receiptFiles.length > 0) initialTasks.push({ id: "receipt", name: "อัปโหลดใบเสร็จรับเงิน/ใบกำกับภาษี", status: "pending" });
+    if (hasItemList && itemListFiles.length > 0) initialTasks.push({ id: "itemList", name: "อัปโหลดไฟล์รายการสินค้า", status: "pending" });
     if (slipPreview && !paidWithCash) initialTasks.push({ id: "slip", name: "อัปโหลดสลิปการโอนเงิน", status: "pending" });
     if (requireIdCard && idCardPreview) initialTasks.push({ id: "idCard", name: "อัปโหลดสำเนาบัตรประชาชนผู้ขาย", status: "pending" });
     
     // Summary Merge Task
-    const willHaveMultiple = (receiptPreview ? 1 : 0) + (hasItemList && itemListPreview ? 1 : 0) + (slipPreview && !paidWithCash ? 1 : 0) + (requireIdCard && idCardPreview ? 1 : 0) > 0;
+    const willHaveMultiple = (receiptFiles.length > 0 ? 1 : 0) + (hasItemList && itemListFiles.length > 0 ? 1 : 0) + (slipPreview && !paidWithCash ? 1 : 0) + (requireIdCard && idCardPreview ? 1 : 0) > 0;
     if (willHaveMultiple) initialTasks.push({ id: "merge", name: "รวมไฟล์ทั้งหมดเป็น PDF สรุป", status: "pending" });
     
     setUploadTasks(initialTasks);
@@ -219,13 +224,21 @@ export default function NewShopWithReceiptPage() {
       const uploadedFiles: { type: string; link: string; name: string; path: string }[] = [];
       const base64PdfsToMerge: string[] = [];
 
-      if (receiptPreview && receiptFile) {
+      if (receiptFiles.length > 0) {
         updateTask("receipt", { status: "uploading" });
         try {
-          const pdfBase64 = await convertImageToPdfBase64(receiptPreview, receiptFile.type);
-          base64PdfsToMerge.push(pdfBase64);
+          const pdfs = await Promise.all(receiptFiles.map(async f => {
+            const dataUrl = await new Promise<string>((resolve) => {
+              const reader = new FileReader();
+              reader.onload = () => resolve(reader.result as string);
+              reader.readAsDataURL(f);
+            });
+            return await convertImageToPdfBase64(dataUrl, f.type || "image/jpeg");
+          }));
+          const finalPdfBase64 = pdfs.length > 1 ? await mergePdfBase64(pdfs) : pdfs[0];
+          base64PdfsToMerge.push(finalPdfBase64);
           const receiptName = `${baseFileName}-ใบเสร็จ`;
-          const res = await uploadToGoogleDrive(pdfBase64, folderId, receiptName, date, "ร้านค้ามีใบเสร็จ");
+          const res = await uploadToGoogleDrive(finalPdfBase64, folderId, receiptName, date, "ร้านค้ามีใบเสร็จ");
           if (!res.success) throw new Error(res.error || "Failed to upload receipt to Drive");
           uploadedFiles.push({ type: "receipt", link: res.link, name: receiptName, path: `${drivePathPrefix} > ${receiptName}.pdf` });
           updateTask("receipt", { status: "success", link: res.link, path: `${drivePathPrefix} > ${receiptName}.pdf` });
@@ -235,13 +248,21 @@ export default function NewShopWithReceiptPage() {
         }
       }
 
-      if (hasItemList && itemListPreview && itemListFile) {
+      if (hasItemList && itemListFiles.length > 0) {
         updateTask("itemList", { status: "uploading" });
         try {
-          const pdfBase64 = await convertImageToPdfBase64(itemListPreview, itemListFile.type);
-          base64PdfsToMerge.push(pdfBase64);
+          const pdfs = await Promise.all(itemListFiles.map(async f => {
+            const dataUrl = await new Promise<string>((resolve) => {
+              const reader = new FileReader();
+              reader.onload = () => resolve(reader.result as string);
+              reader.readAsDataURL(f);
+            });
+            return await convertImageToPdfBase64(dataUrl, f.type || "image/jpeg");
+          }));
+          const finalPdfBase64 = pdfs.length > 1 ? await mergePdfBase64(pdfs) : pdfs[0];
+          base64PdfsToMerge.push(finalPdfBase64);
           const itemListName = `${baseFileName}-รายการสินค้า`;
-          const res = await uploadToGoogleDrive(pdfBase64, folderId, itemListName, date, "ร้านค้ามีใบเสร็จ");
+          const res = await uploadToGoogleDrive(finalPdfBase64, folderId, itemListName, date, "ร้านค้ามีใบเสร็จ");
           if (!res.success) throw new Error(res.error || "Failed to upload item list to Drive");
           uploadedFiles.push({ type: "item_list", link: res.link, name: itemListName, path: `${drivePathPrefix} > ${itemListName}.pdf` });
           updateTask("itemList", { status: "success", link: res.link, path: `${drivePathPrefix} > ${itemListName}.pdf` });
@@ -343,7 +364,7 @@ export default function NewShopWithReceiptPage() {
     }
   };
 
-  const canSubmit = items.length > 0 && shopName && amount && (paidWithCash || slipPreview) && receiptPreview && (!requireIdCard || idCardPreview);
+  const canSubmit = items.length > 0 && shopName && amount && (paidWithCash || slipPreview) && receiptFiles.length > 0 && (!requireIdCard || idCardPreview);
 
   return (
     <main className="min-h-screen p-4 md:p-8 pb-24 bg-slate-50/50">
@@ -421,6 +442,7 @@ export default function NewShopWithReceiptPage() {
               <input 
                 type="file" 
                 accept="application/pdf,image/jpeg,image/png,image/webp"
+                multiple
                 className="hidden" 
                 ref={scanInputRef}
                 onChange={handleReceiptChange}
@@ -432,7 +454,7 @@ export default function NewShopWithReceiptPage() {
                   disabled={isScanning}
                   className="btn-primary shadow-md shadow-indigo-200 px-8 py-3 rounded-full w-full max-w-sm"
                 >
-                  {isScanning ? "กำลังให้ AI อ่านข้อมูล... ⏳" : (receiptFile ? "เปลี่ยนรูปภาพใบเสร็จ" : "1. คลิกที่นี่สำหรับรูปใบเสร็จรับเงิน/ใบกำกับภาษี")}
+                  {isScanning ? "กำลังให้ AI อ่านข้อมูล... ⏳" : (receiptFiles.length > 0 ? "+ เพิ่มรูปภาพใบเสร็จอีก" : "1. คลิกที่นี่สำหรับรูปใบเสร็จรับเงิน/ใบกำกับภาษี")}
                 </button>
                 
                 <label className="flex items-center gap-2 cursor-pointer text-sm text-indigo-700 bg-white/50 px-4 py-2 rounded-lg border border-indigo-100 w-full max-w-sm">
@@ -442,8 +464,7 @@ export default function NewShopWithReceiptPage() {
                     onChange={(e) => {
                       setHasItemList(e.target.checked);
                       if (!e.target.checked) {
-                        setItemListFile(null);
-                        setItemListPreview(null);
+                        setItemListFiles([]);
                       }
                     }}
                     className="rounded border-indigo-300 text-indigo-600 focus:ring-indigo-500 w-4 h-4"
@@ -456,6 +477,7 @@ export default function NewShopWithReceiptPage() {
                     <input 
                       type="file" 
                       accept="application/pdf,image/jpeg,image/png,image/webp"
+                      multiple
                       className="hidden" 
                       ref={itemListInputRef}
                       onChange={handleItemListChange}
@@ -465,12 +487,12 @@ export default function NewShopWithReceiptPage() {
                       disabled={isScanning}
                       className="btn-outline w-full px-8 py-3 rounded-full border-indigo-200 text-indigo-700 hover:bg-indigo-50"
                     >
-                      {itemListFile ? "เปลี่ยนรูปภาพรายการสินค้า" : "2. คลิกที่นี่สำหรับเพิ่มรายการสินค้าหรือไฟล์ที่เกี่ยวข้อง"}
+                      {itemListFiles.length > 0 ? "+ เพิ่มรูปภาพรายการสินค้าอีก" : "2. คลิกที่นี่สำหรับเพิ่มรายการสินค้าหรือไฟล์ที่เกี่ยวข้อง"}
                     </button>
                   </div>
                 )}
 
-                {(receiptFile || itemListFile) && (
+                {(receiptFiles.length > 0 || itemListFiles.length > 0) && (
                   <button 
                     onClick={handleManualScan}
                     disabled={isScanning}
@@ -483,24 +505,33 @@ export default function NewShopWithReceiptPage() {
               {scanError && <p className="text-red-500 text-sm mt-3">{scanError}</p>}
               
               <div className="flex gap-4 justify-center flex-wrap mt-6">
-                {receiptPreview && (
-                  <div className="relative inline-block group">
-                    <p className="text-xs text-indigo-600 mb-1 font-medium">ใบเสร็จ/ใบกำกับภาษี</p>
-                    <img src={receiptPreview} className="max-h-48 rounded-lg border border-slate-200 shadow-sm" alt="receipt preview" />
+                {receiptFiles.map((file, idx) => (
+                  <div key={`receipt-${idx}`} className="relative inline-block group animate-in fade-in zoom-in-95">
+                    <p className="text-xs text-indigo-600 mb-1 font-medium truncate w-24">ใบเสร็จ {`(${idx+1})`}</p>
+                    {file.type === "application/pdf" ? (
+                       <div className="h-24 w-24 bg-red-50 text-red-600 rounded-lg border border-slate-200 flex items-center justify-center font-bold shadow-sm">PDF</div>
+                    ) : (
+                       <img src={URL.createObjectURL(file)} className="h-24 w-24 object-cover rounded-lg border border-slate-200 shadow-sm" alt="receipt preview" />
+                    )}
                     {!isScanning && (
-                      <button onClick={() => { setReceiptPreview(null); setReceiptFile(null); }} className="absolute top-6 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity shadow-sm">✕</button>
+                      <button onClick={() => setReceiptFiles(prev => prev.filter((_, i) => i !== idx))} className="absolute top-6 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity shadow-sm">✕</button>
                     )}
                   </div>
-                )}
-                {hasItemList && itemListPreview && (
-                  <div className="relative inline-block group animate-in fade-in zoom-in-95">
-                    <p className="text-xs text-emerald-600 mb-1 font-medium">รายการสินค้า</p>
-                    <img src={itemListPreview} className="max-h-48 rounded-lg border border-slate-200 shadow-sm" alt="item list preview" />
+                ))}
+                
+                {hasItemList && itemListFiles.map((file, idx) => (
+                  <div key={`item-${idx}`} className="relative inline-block group animate-in fade-in zoom-in-95">
+                    <p className="text-xs text-emerald-600 mb-1 font-medium truncate w-24">สินค้า {`(${idx+1})`}</p>
+                    {file.type === "application/pdf" ? (
+                       <div className="h-24 w-24 bg-red-50 text-red-600 rounded-lg border border-slate-200 flex items-center justify-center font-bold shadow-sm">PDF</div>
+                    ) : (
+                       <img src={URL.createObjectURL(file)} className="h-24 w-24 object-cover rounded-lg border border-slate-200 shadow-sm" alt="item list preview" />
+                    )}
                     {!isScanning && (
-                      <button onClick={() => { setItemListPreview(null); setItemListFile(null); }} className="absolute top-6 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity shadow-sm">✕</button>
+                      <button onClick={() => setItemListFiles(prev => prev.filter((_, i) => i !== idx))} className="absolute top-6 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity shadow-sm">✕</button>
                     )}
                   </div>
-                )}
+                ))}
               </div>
             </div>
 
@@ -702,7 +733,7 @@ export default function NewShopWithReceiptPage() {
               </button>
               <button 
                 onClick={handleFinalSubmit}
-                disabled={!canSubmit || uploadStatus === "uploading"}
+                disabled={uploadStatus === "uploading"}
                 className="btn-primary flex-1 sm:flex-none shadow-lg shadow-indigo-200 disabled:opacity-50"
               >
                 Accept and save to drive

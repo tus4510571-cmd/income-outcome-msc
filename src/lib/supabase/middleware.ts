@@ -29,6 +29,26 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
+  if (user) {
+    // Check for 15-minute idle timeout
+    const lastActivity = request.cookies.get("last-activity");
+    if (!lastActivity) {
+      // Cookie expired (max-age reached) or missing, force logout
+      await supabase.auth.signOut();
+      const url = request.nextUrl.clone();
+      url.pathname = "/login";
+      // We pass supabaseResponse to ensure the auth cookies are cleared in the browser
+      const redirectResponse = NextResponse.redirect(url);
+      
+      // Copy over the cleared cookies from supabaseResponse
+      supabaseResponse.cookies.getAll().forEach((cookie) => {
+        redirectResponse.cookies.set(cookie.name, cookie.value, cookie);
+      });
+      
+      return redirectResponse;
+    }
+  }
+
   if (
     !user &&
     !request.nextUrl.pathname.startsWith("/login") &&

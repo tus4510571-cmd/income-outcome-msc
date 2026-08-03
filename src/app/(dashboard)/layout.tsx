@@ -1,5 +1,6 @@
 import Sidebar from "@/components/Sidebar";
 import MobileHeader from "@/components/MobileHeader";
+import SessionTimeout from "@/components/SessionTimeout";
 
 export default function DashboardLayout({
   children,
@@ -7,7 +8,9 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex min-h-screen h-screen bg-[#FDFDFD] overflow-hidden print:h-auto print:overflow-visible">
+    <>
+      <SessionTimeout />
+      <div className="flex min-h-screen h-screen bg-[#FDFDFD] overflow-hidden print:h-auto print:overflow-visible">
       <div className="print:hidden h-full">
         <Sidebar />
       </div>
@@ -21,6 +24,7 @@ export default function DashboardLayout({
           {children}
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 }

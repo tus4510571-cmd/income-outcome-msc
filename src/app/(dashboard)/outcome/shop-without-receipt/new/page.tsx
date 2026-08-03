@@ -286,6 +286,18 @@ export default function NewShopWithoutReceiptPage() {
   };
 
   const handleFinalSubmit = async () => {
+    if (!canSubmit) {
+      const missingFields = [];
+      if (items.length === 0) missingFields.push("รายการสินค้า (ต้องมีอย่างน้อย 1 รายการ)");
+      if (!shopName) missingFields.push("ชื่อร้านค้า");
+      if (!amount) missingFields.push("ยอดเงินรวม");
+      if (!description) missingFields.push("รายละเอียดเพิ่มเติม");
+      if (!paidWithCash && !slipPreview) missingFields.push("รูปสลิปโอนเงิน (ถ้าไม่ได้จ่ายเงินสด)");
+      
+      alert("ไม่สามารถบันทึกได้ กรุณากรอกข้อมูล/แนบไฟล์ต่อไปนี้ให้ครบถ้วน:\n- " + missingFields.join("\n- "));
+      return;
+    }
+    
     setUploadStatus("uploading");
     setUploadError("");
 
@@ -932,7 +944,7 @@ export default function NewShopWithoutReceiptPage() {
               </button>
               <button 
                 onClick={handleFinalSubmit}
-                disabled={!canSubmit || uploadStatus === "uploading"}
+                disabled={uploadStatus === "uploading"}
                 className="btn-primary flex-1 sm:flex-none shadow-lg shadow-indigo-200 disabled:opacity-50"
               >
                 Accept and save to drive

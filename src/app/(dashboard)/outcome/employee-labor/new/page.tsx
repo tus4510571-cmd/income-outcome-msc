@@ -104,8 +104,14 @@ export default function CreateEmployeeLaborTransactionPage() {
 
   const handleSubmit = async () => {
     if (!selectedReceipt) return;
-    if (!slipFile || !idFile || !receiveFile) {
-      alert("กรุณาแนบไฟล์ให้ครบถ้วน");
+    
+    const missingFields = [];
+    if (!slipFile) missingFields.push("สลิปโอนเงิน");
+    if (!idFile) missingFields.push("สำเนาบัตรประชาชน");
+    if (!receiveFile) missingFields.push("ใบสำคัญรับเงิน");
+
+    if (missingFields.length > 0) {
+      alert("ไม่สามารถบันทึกได้ กรุณาแนบไฟล์ต่อไปนี้ให้ครบถ้วน:\n- " + missingFields.join("\n- "));
       return;
     }
 
@@ -140,6 +146,7 @@ export default function CreateEmployeeLaborTransactionPage() {
       const base64PdfsToMerge: string[] = [];
 
       for (const item of filesToUpload) {
+        if (!item.file) continue;
         setUploadTasks(prev => prev.map(t => t.id === item.taskId ? { ...t, status: "uploading" } : t));
         
         try {
@@ -415,11 +422,11 @@ export default function CreateEmployeeLaborTransactionPage() {
                 {/* Save Button */}
                 <button
                   onClick={handleSubmit}
-                  disabled={uploadStatus === "uploading" || !slipFile || !idFile || !receiveFile}
+                  disabled={uploadStatus === "uploading"}
                   className={`w-full py-4 rounded-xl text-white font-bold text-lg transition-all shadow-md flex items-center justify-center gap-2 ${
-                    uploadStatus === "uploading" || !slipFile || !idFile || !receiveFile
-                      ? "bg-slate-400 cursor-not-allowed" 
-                      : "bg-emerald-600 hover:bg-emerald-700 active:scale-95"
+                    uploadStatus === "uploading"
+                      ? "bg-slate-400 cursor-not-allowed"
+                      : "bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 hover:shadow-lg hover:-translate-y-0.5"
                   }`}
                 >
                   {uploadStatus === "uploading" ? (

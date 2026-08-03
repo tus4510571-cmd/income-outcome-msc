@@ -71,11 +71,11 @@ export default function NewBranchTransferPage() {
   const handleMergeFiles = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!branchName) {
-      setError("กรุณาเลือกสาขา");
+      alert("ไม่สามารถดำเนินการได้ กรุณาเลือกสาขา");
       return;
     }
     if (selectedFiles.length === 0) {
-      setError("กรุณาเลือกไฟล์ยอดขายอย่างน้อย 1 ไฟล์");
+      alert("ไม่สามารถดำเนินการได้ กรุณาเลือกไฟล์ยอดขายอย่างน้อย 1 ไฟล์");
       return;
     }
     
@@ -125,7 +125,10 @@ export default function NewBranchTransferPage() {
   };
 
   const handleFinalSubmit = async () => {
-    if (!branchName || !mergedPdfBase64) return;
+    if (!branchName || !mergedPdfBase64) {
+      alert("กรุณาทำรายการรวมไฟล์ให้เสร็จสมบูรณ์ก่อนบันทึก");
+      return;
+    }
     
     setSaving(true);
     setUploadStatus("uploading");
@@ -405,7 +408,7 @@ export default function NewBranchTransferPage() {
           )}
 
           <div className="pt-4 flex gap-4">
-            <button type="submit" disabled={merging || selectedFiles.length === 0 || !branchName} className="btn-secondary flex-1 py-3 text-lg">
+            <button type="submit" disabled={merging} className="btn-secondary flex-1 py-3 text-lg">
               {merging ? "กำลังประมวลผลไฟล์..." : "รวมไฟล์และตรวจสอบ"}
             </button>
           </div>

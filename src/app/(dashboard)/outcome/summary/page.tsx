@@ -92,18 +92,35 @@ export default function SummaryPage() {
     filtered = filtered.filter(t => t.category === categoryFilter);
   }
 
-  const totalAmount = filtered.reduce((sum, t) => sum + t.amount, 0);
+  const grossTotalAmount = filtered.reduce((sum, t) => sum + t.amount, 0);
+  const totalRefunded = filtered.reduce((sum, t) => {
+    return sum + (t.expense_detail?.is_refunded ? (t.expense_detail.refund_amount || 0) : 0);
+  }, 0);
+  const netTotalAmount = Math.max(0, grossTotalAmount - totalRefunded);
 
   const handleExportExcel = async () => {
     const XLSX = await import("xlsx");
-    const data = filtered.map((t) => ({
-      "วันที่": formatDate(t.transaction_date),
-      "ประเภท": getCategoryLabel(t.category),
-      "ชื่อ/ร้านค้า": getDetailName(t),
-      "รายละเอียด": t.description || "-",
-      "จำนวนเงิน": t.amount,
-      "สถานะเอกสาร": isComplete(t) ? "ครบถ้วน" : "ขาดเอกสาร",
-    }));
+    const data = filtered.map((t) => {
+      const isRefund = t.expense_detail?.is_refunded;
+      const refAmt = isRefund ? (t.expense_detail?.refund_amount || 0) : 0;
+      const netAmt = Math.max(0, t.amount - refAmt);
+
+      return {
+        "วันที่": formatDate(t.transaction_date),
+        "ประเภท": getCategoryLabel(t.category),
+        "ชื่อ/ร้านค้า": getDetailName(t),
+        "รายละเอียด": t.description || "-",
+        "ยอดจ่ายซื้อเดิม": t.amount,
+        "สถานะคืนเงิน": isRefund ? (refAmt >= t.amount ? "คืนเงินเต็มจำนวน" : "คืนเงินบางส่วน") : "ปกติ",
+        "ยอดเงินคืน": refAmt,
+        "ยอดจ่ายสุทธิ": netAmt,
+        "รหัสอ้างอิงคืนเงิน": isRefund ? `REF-${t.id.substring(0, 8).toUpperCase()}` : "-",
+        "วันที่คืนเงิน": isRefund ? (t.expense_detail?.refund_date || "-") : "-",
+        "ช่องทางรับเงินคืน": isRefund ? (t.expense_detail?.refund_type === "via_personal" ? "ผ่านบัญชีส่วนตัว -> เข้าบริษัท" : "เข้าบัญชีบริษัทโดยตรง") : "-",
+        "เหตุผลการคืนเงิน": isRefund ? (t.expense_detail?.refund_reason || "-") : "-",
+        "สถานะเอกสาร": isComplete(t) ? "ครบถ้วน" : "ขาดเอกสาร",
+      };
+    });
 
     const worksheet = XLSX.utils.json_to_sheet(data);
     const workbook = XLSX.utils.book_new();
@@ -216,10 +233,15 @@ export default function SummaryPage() {
         <div className="flex flex-col md:flex-row gap-4 mb-6">
           <div className="flex-1 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-slate-500">ยอดรวม (ตามตัวกรองที่เลือก)</p>
+              <p className="text-sm font-medium text-slate-500">ยอดรวมสุทธิ (ตามตัวกรองที่เลือก)</p>
               <h2 className="text-3xl font-black text-rose-600 mt-1">
-                -฿{totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                -฿{netTotalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </h2>
+              {totalRefunded > 0 && (
+                <p className="text-xs text-amber-600 mt-1 font-medium">
+                  (ยอดซื้อเดิม ฿{grossTotalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} - ได้รับคืน ฿{totalRefunded.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})
+                </p>
+              )}
             </div>
             <div className="flex items-center gap-3">
               <button 

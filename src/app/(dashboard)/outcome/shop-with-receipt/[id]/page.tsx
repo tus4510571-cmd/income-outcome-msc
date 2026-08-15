@@ -4,6 +4,7 @@ import Link from "next/link";
 import FileUploadSection from "./FileUploadSection";
 
 import TransactionActions from "@/components/TransactionActions";
+import RefundTimeline from "@/components/RefundTimeline";
 
 export default async function ShopWithReceiptDetailPage({
   params,
@@ -53,6 +54,8 @@ export default async function ShopWithReceiptDetailPage({
           </div>
           <TransactionActions id={transaction.id} backUrl="/outcome/shop-with-receipt" />
         </div>
+
+        <RefundTimeline transaction={transaction} />
 
         <FileUploadSection
           transactionId={transaction.id}

@@ -2,6 +2,7 @@
 
 import FileUpload from "@/components/FileUpload";
 import FileImage from "@/components/FileImage";
+import RefundTimeline from "@/components/RefundTimeline";
 import { type TransactionWithDetails, formatCurrency } from "@/lib/types";
 
 interface DetailContentProps {
@@ -9,7 +10,6 @@ interface DetailContentProps {
 }
 
 export default function DetailContent({ transaction }: DetailContentProps) {
-
   const renderFileBox = (fileType: string, label: string) => {
     const file = transaction.files?.find((f) => f.file_type === fileType);
     
@@ -69,6 +69,8 @@ export default function DetailContent({ transaction }: DetailContentProps) {
 
   return (
     <div className="space-y-4">
+      <RefundTimeline transaction={transaction} />
+
       <div className="card">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-slate-800">เอกสาร</h2>

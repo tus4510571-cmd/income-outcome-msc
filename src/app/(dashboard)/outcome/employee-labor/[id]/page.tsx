@@ -4,6 +4,7 @@ import Link from "next/link";
 import EmployeeFileSection from "./EmployeeFileSection";
 
 import TransactionActions from "@/components/TransactionActions";
+import RefundTimeline from "@/components/RefundTimeline";
 
 export default async function EmployeeLaborDetailPage({
   params,
@@ -53,6 +54,8 @@ export default async function EmployeeLaborDetailPage({
           </div>
           <TransactionActions id={transaction.id} backUrl="/outcome/employee-labor" />
         </div>
+
+        <RefundTimeline transaction={transaction} />
 
         <EmployeeFileSection
           transactionId={transaction.id}

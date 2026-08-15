@@ -473,3 +473,170 @@ export async function getNextMonthlySequence(dateString: string) {
   const nextSeq = (count || 0) + 1;
   return String(nextSeq).padStart(4, "0");
 }
+
+export async function recordRefund(data: {
+  transactionId: string;
+  refundAmount: number;
+  refundDate: string;
+  refundType: "company_direct" | "via_personal";
+  refundReason: string;
+  refundSlipCompanyBase64?: string;
+  refundSlipCompanyName?: string;
+  refundSlipPersonalBase64?: string;
+  refundSlipPersonalName?: string;
+  refundChatProofBase64?: string;
+  refundChatProofName?: string;
+  refundNoChatReason?: string;
+}) {
+  const user = await getAuthUser();
+  const supabase = await createClient();
+
+  // 1. Get original transaction
+  const { data: tx } = await supabase
+    .from("transactions")
+    .select("*, expense_detail:expense_details(*)")
+    .eq("id", data.transactionId)
+    .eq("user_id", user.id)
+    .single();
+
+  if (!tx) throw new Error("ไม่พบรายการธุรกรรม");
+
+  const outcomeFolderId = await getSetting("outcome_drive_folder_id");
+  let refundSlipCompanyPath = tx.expense_detail?.refund_slip_company_path || null;
+  let refundSlipPersonalPath = tx.expense_detail?.refund_slip_personal_path || null;
+  let refundChatProofPath = tx.expense_detail?.refund_chat_proof_path || null;
+
+  // Upload Refund Slip Company
+  if (data.refundSlipCompanyBase64) {
+    if (outcomeFolderId) {
+      try {
+        const { uploadToGoogleDrive } = await import("./drive");
+        const res = await uploadToGoogleDrive(
+          data.refundSlipCompanyBase64,
+          outcomeFolderId,
+          `สลิปโอนคืนเข้าบริษัท_${data.transactionId.substring(0, 6)}`,
+          data.refundDate,
+          "Refund"
+        );
+        if (res?.link) refundSlipCompanyPath = res.link;
+      } catch (err) {
+        console.warn("Drive upload fallback:", err);
+      }
+    }
+    if (!refundSlipCompanyPath || !refundSlipCompanyPath.includes("drive.google.com")) {
+      const res = await uploadFile(
+        data.transactionId,
+        "refund_slip_company",
+        data.refundDate,
+        "outcome",
+        data.refundSlipCompanyName || "refund_slip_company.jpg",
+        data.refundSlipCompanyBase64
+      );
+      refundSlipCompanyPath = res.filePath;
+    }
+  }
+
+  // Upload Refund Slip Personal (if via_personal)
+  if (data.refundSlipPersonalBase64 && data.refundType === "via_personal") {
+    if (outcomeFolderId) {
+      try {
+        const { uploadToGoogleDrive } = await import("./drive");
+        const res = await uploadToGoogleDrive(
+          data.refundSlipPersonalBase64,
+          outcomeFolderId,
+          `สลิปร้านค้าโอนคืนเข้าส่วนตัว_${data.transactionId.substring(0, 6)}`,
+          data.refundDate,
+          "Refund"
+        );
+        if (res?.link) refundSlipPersonalPath = res.link;
+      } catch (err) {
+        console.warn("Drive upload fallback:", err);
+      }
+    }
+    if (!refundSlipPersonalPath || !refundSlipPersonalPath.includes("drive.google.com")) {
+      const res = await uploadFile(
+        data.transactionId,
+        "refund_slip_personal",
+        data.refundDate,
+        "outcome",
+        data.refundSlipPersonalName || "refund_slip_personal.jpg",
+        data.refundSlipPersonalBase64
+      );
+      refundSlipPersonalPath = res.filePath;
+    }
+  }
+
+  // Upload Chat Proof
+  if (data.refundChatProofBase64) {
+    if (outcomeFolderId) {
+      try {
+        const { uploadToGoogleDrive } = await import("./drive");
+        const res = await uploadToGoogleDrive(
+          data.refundChatProofBase64,
+          outcomeFolderId,
+          `หลักฐานแชทคืนเงิน_${data.transactionId.substring(0, 6)}`,
+          data.refundDate,
+          "Refund"
+        );
+        if (res?.link) refundChatProofPath = res.link;
+      } catch (err) {
+        console.warn("Drive upload fallback:", err);
+      }
+    }
+    if (!refundChatProofPath || !refundChatProofPath.includes("drive.google.com")) {
+      const res = await uploadFile(
+        data.transactionId,
+        "refund_chat_proof",
+        data.refundDate,
+        "outcome",
+        data.refundChatProofName || "refund_chat_proof.jpg",
+        data.refundChatProofBase64
+      );
+      refundChatProofPath = res.filePath;
+    }
+  }
+
+  // Update expense_details
+  const { error: updateError } = await supabase
+    .from("expense_details")
+    .update({
+      is_refunded: true,
+      refund_amount: Number(data.refundAmount),
+      refund_date: data.refundDate,
+      refund_type: data.refundType,
+      refund_reason: data.refundReason,
+      refund_slip_company_path: refundSlipCompanyPath,
+      refund_slip_personal_path: refundSlipPersonalPath,
+      refund_chat_proof_path: refundChatProofPath,
+      refund_no_chat_reason: data.refundNoChatReason || null,
+    })
+    .eq("transaction_id", data.transactionId);
+
+  if (updateError) throw new Error("ไม่สามารถบันทึกข้อมูลการคืนเงินได้: " + updateError.message);
+
+  return { success: true };
+}
+
+export async function cancelRefund(transactionId: string) {
+  const user = await getAuthUser();
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from("expense_details")
+    .update({
+      is_refunded: false,
+      refund_amount: 0,
+      refund_date: null,
+      refund_type: null,
+      refund_reason: null,
+      refund_slip_company_path: null,
+      refund_slip_personal_path: null,
+      refund_chat_proof_path: null,
+      refund_no_chat_reason: null,
+    })
+    .eq("transaction_id", transactionId);
+
+  if (error) throw new Error("ไม่สามารถยกเลิกสถานะคืนเงินได้: " + error.message);
+
+  return { success: true };
+}

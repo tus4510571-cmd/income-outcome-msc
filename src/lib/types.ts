@@ -46,6 +46,15 @@ export interface ExpenseDetail {
   shop_tax_id: string | null;
   employee_name: string | null;
   receipt_number?: string | null;
+  is_refunded?: boolean | null;
+  refund_amount?: number | null;
+  refund_date?: string | null;
+  refund_type?: "company_direct" | "via_personal" | null;
+  refund_reason?: string | null;
+  refund_slip_company_path?: string | null;
+  refund_slip_personal_path?: string | null;
+  refund_chat_proof_path?: string | null;
+  refund_no_chat_reason?: string | null;
 }
 
 export interface IncomeDetail {

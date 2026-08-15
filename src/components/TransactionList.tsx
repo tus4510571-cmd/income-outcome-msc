@@ -141,6 +141,12 @@ export default function TransactionList({ transactions, baseHref, showFiles = fa
                     <span className="text-xs text-slate-500">{getCategoryLabel()}</span>
                     <span className="text-xs text-slate-400">•</span>
                     <span className="text-xs">{getStatusElement()}</span>
+                    {t.expense_detail?.is_refunded && (
+                      <span className="text-[10px] bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded-full flex items-center gap-1 border border-amber-200">
+                        <span>🔄</span>
+                        <span>คืนเงิน {formatCurrency(t.expense_detail.refund_amount || 0, t.currency)}</span>
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
@@ -151,6 +157,15 @@ export default function TransactionList({ transactions, baseHref, showFiles = fa
                     <span className="text-lg font-black text-emerald-600">
                       +{formatCurrency(t.amount, t.currency)} {t.currency}
                     </span>
+                  ) : t.expense_detail?.is_refunded ? (
+                    <div className="flex flex-col items-end">
+                      <span className="text-xs text-slate-400 line-through">
+                        -{formatCurrency(t.amount, t.currency)} {t.currency}
+                      </span>
+                      <span className="text-lg font-black text-amber-600">
+                        -{formatCurrency(Math.max(0, t.amount - (t.expense_detail.refund_amount || 0)), t.currency)} {t.currency}
+                      </span>
+                    </div>
                   ) : (
                     <span className="text-lg font-black text-slate-700">
                       -{formatCurrency(t.amount, t.currency)} {t.currency}

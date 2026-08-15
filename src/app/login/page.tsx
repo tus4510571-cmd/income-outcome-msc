@@ -39,12 +39,13 @@ export default function LoginPage() {
   return (
     <main className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-indigo-50 via-white to-purple-50">
       <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-slate-800 mb-2">
-            ระบบรายรับ-รายจ่าย
+        <div className="text-center mb-8 flex flex-col items-center">
+          <img src="/logo.png" alt="MAISON CRAFT" className="h-16 object-contain mb-4" />
+          <h1 className="text-2xl font-bold text-slate-800 mb-1">
+            MSC Income Outcome
           </h1>
-          <p className="text-slate-500">
-            เข้าสู่ระบบ
+          <p className="text-slate-500 text-sm">
+            ระบบจัดการรายรับและรายจ่าย
           </p>
         </div>
 

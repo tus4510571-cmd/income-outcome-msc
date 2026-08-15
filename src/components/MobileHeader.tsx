@@ -21,10 +21,8 @@ export default function MobileHeader() {
           </svg>
         </button>
         <Link href="/" className="inline-flex items-center gap-2">
-          <div className="w-8 h-8 rounded-md bg-slate-900 flex items-center justify-center text-white font-bold text-sm">
-            IO
-          </div>
-          <span className="font-semibold text-slate-800 text-sm tracking-tight">IncomeOutcome</span>
+          <img src="/icon-192.png" alt="MSC Logo" className="w-7 h-7 rounded-md object-contain shadow-xs border border-slate-100" />
+          <span className="font-bold text-slate-900 text-sm tracking-tight">MAISON CRAFT</span>
         </Link>
         {/* Back button logic can be handled inside specific pages instead, to allow going back to specific previous paths */}
       </div>

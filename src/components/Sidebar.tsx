@@ -47,11 +47,12 @@ export default function Sidebar({ mobile, onClose }: { mobile?: boolean; onClose
   const content = (
     <div className="p-4 flex flex-col h-full">
       <div className="flex items-center justify-between mb-8 px-2">
-        <Link href="/" className="inline-flex items-center gap-2" onClick={onClose}>
-          <div className="w-8 h-8 rounded-md bg-slate-900 flex items-center justify-center text-white font-bold text-sm">
-            IO
+        <Link href="/" className="inline-flex items-center gap-2.5" onClick={onClose}>
+          <img src="/icon-192.png" alt="MSC Logo" className="w-8 h-8 rounded-lg object-contain shadow-xs border border-slate-100" />
+          <div className="flex flex-col">
+            <span className="font-bold text-slate-900 text-sm tracking-tight leading-tight">MAISON CRAFT</span>
+            <span className="text-[10px] text-slate-400 font-medium">Income Outcome</span>
           </div>
-          <span className="font-semibold text-slate-800 text-sm tracking-tight">IncomeOutcome</span>
         </Link>
         {mobile && (
           <button onClick={onClose} className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-md">

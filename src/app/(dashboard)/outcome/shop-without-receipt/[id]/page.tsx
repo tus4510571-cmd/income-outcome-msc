@@ -44,9 +44,16 @@ export default async function ShopWithoutReceiptDetailPage({
               </svg>
             </Link>
             <div>
-              <h1 className="text-2xl md:text-3xl font-extrabold text-slate-800 tracking-tight">
-                {transaction.expense_detail?.shop_name || "ร้านค้า"}
-              </h1>
+              <div className="flex items-center gap-2.5 flex-wrap">
+                <h1 className="text-2xl md:text-3xl font-extrabold text-slate-800 tracking-tight">
+                  {transaction.expense_detail?.shop_name || "ร้านค้า"}
+                </h1>
+                {transaction.expense_detail?.receipt_number && (
+                  <span className="px-2.5 py-1 bg-indigo-50 border border-indigo-200 text-indigo-700 rounded-lg text-xs font-mono font-bold shadow-xs">
+                    {transaction.expense_detail.receipt_number}
+                  </span>
+                )}
+              </div>
               <p className="text-slate-500 mt-1">
                 {transaction.description || "ไม่มีรายละเอียด"} | <span className="font-medium text-slate-700">฿{transaction.amount.toLocaleString()}</span>
               </p>

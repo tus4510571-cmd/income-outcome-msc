@@ -474,6 +474,53 @@ export async function getNextMonthlySequence(dateString: string) {
   return String(nextSeq).padStart(4, "0");
 }
 
+export async function getNextPVNumber(dateString: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  const parts = dateString.split("-");
+  const yyyy = parseInt(parts[0]) || new Date().getFullYear();
+  const mm = (parseInt(parts[1]) || (new Date().getMonth() + 1)).toString().padStart(2, "0");
+  const thaiYear2Digits = String(yyyy + 543).slice(-2);
+  const prefix = `PV${thaiYear2Digits}${mm}`;
+
+  if (!user) return `${prefix}0001`;
+
+  // Query all expense_details with receipt_number starting with prefix
+  const { data: existingRecords } = await supabase
+    .from("expense_details")
+    .select("receipt_number")
+    .like("receipt_number", `${prefix}%`);
+
+  let maxSeq = 0;
+  if (existingRecords && existingRecords.length > 0) {
+    for (const rec of existingRecords) {
+      if (rec.receipt_number && rec.receipt_number.startsWith(prefix)) {
+        const seqPart = rec.receipt_number.substring(prefix.length);
+        const seqNum = parseInt(seqPart, 10);
+        if (!isNaN(seqNum) && seqNum > maxSeq) {
+          maxSeq = seqNum;
+        }
+      }
+    }
+  }
+
+  // Fallback: also count shop_without_receipt transactions in that month
+  if (maxSeq === 0) {
+    const monthPrefix = `${parts[0]}-${mm}`;
+    const { count } = await supabase
+      .from("transactions")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .eq("category", "shop_without_receipt")
+      .like("transaction_date", `${monthPrefix}%`);
+    maxSeq = count || 0;
+  }
+
+  const nextSeq = maxSeq + 1;
+  return `${prefix}${String(nextSeq).padStart(4, "0")}`;
+}
+
 export async function recordRefund(data: {
   transactionId: string;
   refundAmount: number;

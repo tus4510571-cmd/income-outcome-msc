@@ -6,7 +6,7 @@ import ReceiptGenerator from "@/components/ReceiptGenerator";
 import CashBillGenerator from "@/components/CashBillGenerator";
 import ReceiptCaptureTemplate from "@/components/ReceiptCaptureTemplate";
 import { type ReceiptItem, formatCurrency } from "@/lib/types";
-import { createTransaction, addReceiptItems, uploadFile, getSetting, setSetting, getNextDailySequence, getNextMonthlySequence, saveGoogleDriveFileLink } from "@/lib/actions";
+import { createTransaction, addReceiptItems, uploadFile, getSetting, setSetting, getNextDailySequence, getNextMonthlySequence, getNextPVNumber, saveGoogleDriveFileLink } from "@/lib/actions";
 import { uploadToGoogleDrive } from "@/lib/drive";
 import { convertImageToPdfBase64, mergePdfBase64, compressImageBase64 } from "@/lib/pdfUtils";
 import { thaiBahtText } from "@/lib/thaiBaht";
@@ -25,6 +25,7 @@ export default function NewShopWithoutReceiptPage() {
     { id: "1", product_name: "", quantity: 1, unit_price: 0, currency: "THB", transaction_id: "" },
   ]);
   const [manualReceiptNumber, setManualReceiptNumber] = useState("");
+  const [pvNumber, setPvNumber] = useState("PV69080001");
   
   // Step 2: Files & Options
   const [paidWithCash, setPaidWithCash] = useState(false);
@@ -95,8 +96,10 @@ export default function NewShopWithoutReceiptPage() {
     async function initData() {
       const d = await getNextDailySequence(date);
       const m = await getNextMonthlySequence(date);
+      const pv = await getNextPVNumber(date);
       setDailySeq(d);
       setMonthlySeq(m);
+      setPvNumber(pv);
       
       const namesStr = await getSetting("saved_signature_names");
       if (namesStr) {
@@ -494,7 +497,7 @@ export default function NewShopWithoutReceiptPage() {
   const mmNum = parseInt(mmStr);
   const ddNum = parseInt(ddStr);
   const dateString = `${String(ddNum).padStart(2, '0')}-${String(mmNum).padStart(2, '0')}-${yyyyNum + 543}`;
-  const defaultInvoiceNumber = `PV${String(yyyyNum + 543).slice(2)}${String(mmNum).padStart(2, '0')}${monthlySeq}`;
+  const defaultInvoiceNumber = pvNumber;
   const invoiceNumber = manualReceiptNumber || defaultInvoiceNumber;
   const totalAmount = items.reduce((sum, item) => sum + item.quantity * item.unit_price, 0);
 

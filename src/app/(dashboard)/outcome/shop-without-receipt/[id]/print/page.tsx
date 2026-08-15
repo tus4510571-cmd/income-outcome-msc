@@ -36,11 +36,13 @@ export default async function PrintReceiptPage({
     businessCardUrl = await getSignedUrl(businessCardFile.file_path);
   }
 
-  // Format Date for invoice number
+  // Format Date and invoice number
   const txDate = new Date(transaction.transaction_date);
-  const dateString = `${txDate.getDate()}/${txDate.getMonth() + 1}/${txDate.getFullYear() + 543}`;
-  const shortId = transaction.id.substring(0, 4).toUpperCase();
-  const invoiceNumber = `TV${txDate.getFullYear() + 543}${String(txDate.getMonth() + 1).padStart(2, "0")}${shortId}`;
+  const dd = String(txDate.getDate()).padStart(2, "0");
+  const mm = String(txDate.getMonth() + 1).padStart(2, "0");
+  const thaiYear = txDate.getFullYear() + 543;
+  const dateString = `${dd}-${mm}-${thaiYear}`;
+  const invoiceNumber = transaction.expense_detail?.receipt_number || `PV${String(thaiYear).slice(-2)}${mm}0001`;
 
   const items = transaction.receipt_items || [];
   const totalAmount = transaction.amount;

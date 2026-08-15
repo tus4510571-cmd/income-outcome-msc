@@ -46,6 +46,16 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="th" className={`${kanit.variable} h-full antialiased`} suppressHydrationWarning>
+      <head>
+        <link rel="manifest" href="/manifest.webmanifest" />
+        <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
+        <link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png" />
+        <link rel="apple-touch-icon" href="/apple-icon.png" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta name="apple-mobile-web-app-title" content="MSC Income Outcome" />
+      </head>
       <body className="min-h-full flex flex-col font-[family-name:var(--font-kanit)]">
         <ThemeProvider>
           {children}

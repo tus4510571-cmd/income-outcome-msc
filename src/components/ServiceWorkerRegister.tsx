@@ -4,14 +4,24 @@ import { useEffect } from "react";
 
 export default function ServiceWorkerRegister() {
   useEffect(() => {
-    if ("serviceWorker" in navigator && window.location.protocol === "https:") {
-      window.addEventListener("load", () => {
+    if (typeof window !== "undefined" && "serviceWorker" in navigator) {
+      const registerSW = () => {
         navigator.serviceWorker
-          .register("/sw.js")
+          .register("/sw.js", { scope: "/" })
+          .then((reg) => {
+            console.log("PWA Service Worker registered:", reg.scope);
+          })
           .catch((error) => {
-            console.warn("Service Worker registration failed:", error);
+            console.warn("PWA Service Worker registration failed:", error);
           });
-      });
+      };
+
+      if (document.readyState === "complete" || document.readyState === "interactive") {
+        registerSW();
+      } else {
+        window.addEventListener("load", registerSW);
+        return () => window.removeEventListener("load", registerSW);
+      }
     }
   }, []);
 

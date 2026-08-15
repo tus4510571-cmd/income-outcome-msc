@@ -1,9 +1,17 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Kanit } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
+import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
 
 export const dynamic = "force-dynamic";
+
+export const viewport: Viewport = {
+  themeColor: "#ffffff",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+};
 
 const kanit = Kanit({
   variable: "--font-kanit",
@@ -12,8 +20,18 @@ const kanit = Kanit({
 });
 
 export const metadata: Metadata = {
-  title: "ระบบรายรับ-รายจ่าย",
-  description: "ระบบจัดการรายรับและรายจ่าย สำหรับธุรกิจขนาดเล็ก",
+  title: "MSC Income Outcome",
+  description: "ระบบจัดการรายรับและรายจ่าย MSC Income Outcome",
+  manifest: "/manifest.json",
+  icons: {
+    icon: "/favicon.png",
+    apple: "/apple-icon.png",
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "MSC Income Outcome",
+  },
 };
 
 export default function RootLayout({
@@ -27,6 +45,7 @@ export default function RootLayout({
         <ThemeProvider>
           {children}
         </ThemeProvider>
+        <ServiceWorkerRegister />
       </body>
     </html>
   );

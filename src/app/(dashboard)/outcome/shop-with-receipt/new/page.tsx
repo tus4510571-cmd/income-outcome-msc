@@ -23,19 +23,23 @@ export default function NewShopWithReceiptPage() {
   
   const [receiptFiles, setReceiptFiles] = useState<File[]>([]);
   const scanInputRef = useRef<HTMLInputElement>(null);
+  const cameraScanInputRef = useRef<HTMLInputElement>(null);
 
   const [hasItemList, setHasItemList] = useState(false);
   const [itemListFiles, setItemListFiles] = useState<File[]>([]);
   const itemListInputRef = useRef<HTMLInputElement>(null);
+  const cameraItemListInputRef = useRef<HTMLInputElement>(null);
 
   const [slipPreview, setSlipPreview] = useState<string | null>(null);
   const [slipFile, setSlipFile] = useState<File | null>(null);
   const slipInputRef = useRef<HTMLInputElement>(null);
+  const cameraSlipInputRef = useRef<HTMLInputElement>(null);
 
   const [requireIdCard, setRequireIdCard] = useState(false);
   const [idCardPreview, setIdCardPreview] = useState<string | null>(null);
   const [idCardFile, setIdCardFile] = useState<File | null>(null);
   const idCardInputRef = useRef<HTMLInputElement>(null);
+  const cameraIdCardInputRef = useRef<HTMLInputElement>(null);
 
   // System States
   const [isScanning, setIsScanning] = useState(false);
@@ -70,6 +74,7 @@ export default function NewShopWithReceiptPage() {
     if (!files || files.length === 0) return;
     setReceiptFiles(prev => [...prev, ...Array.from(files)]);
     if (scanInputRef.current) scanInputRef.current.value = "";
+    if (cameraScanInputRef.current) cameraScanInputRef.current.value = "";
   };
 
   const handleItemListChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -77,6 +82,7 @@ export default function NewShopWithReceiptPage() {
     if (!files || files.length === 0) return;
     setItemListFiles(prev => [...prev, ...Array.from(files)]);
     if (itemListInputRef.current) itemListInputRef.current.value = "";
+    if (cameraItemListInputRef.current) cameraItemListInputRef.current.value = "";
   };
 
   const handleManualScan = () => {
@@ -144,7 +150,9 @@ export default function NewShopWithReceiptPage() {
     } finally {
       setIsScanning(false);
       if (scanInputRef.current) scanInputRef.current.value = "";
+      if (cameraScanInputRef.current) cameraScanInputRef.current.value = "";
       if (itemListInputRef.current) itemListInputRef.current.value = "";
+      if (cameraItemListInputRef.current) cameraItemListInputRef.current.value = "";
     }
   };
 
@@ -155,6 +163,8 @@ export default function NewShopWithReceiptPage() {
     const reader = new FileReader();
     reader.onload = () => setSlipPreview(reader.result as string);
     reader.readAsDataURL(file);
+    if (slipInputRef.current) slipInputRef.current.value = "";
+    if (cameraSlipInputRef.current) cameraSlipInputRef.current.value = "";
   };
 
   const handleIdCardChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -164,6 +174,8 @@ export default function NewShopWithReceiptPage() {
     const reader = new FileReader();
     reader.onload = () => setIdCardPreview(reader.result as string);
     reader.readAsDataURL(file);
+    if (idCardInputRef.current) idCardInputRef.current.value = "";
+    if (cameraIdCardInputRef.current) cameraIdCardInputRef.current.value = "";
   };
 
   const handleFinalSubmit = async () => {
@@ -440,6 +452,14 @@ export default function NewShopWithReceiptPage() {
                 AI จะช่วยดึงข้อมูลบริษัท, ที่อยู่, เลขผู้เสียภาษี และรายการสินค้าให้อัตโนมัติ
               </p>
               <input 
+                ref={cameraScanInputRef}
+                type="file" 
+                accept="image/*"
+                capture="environment"
+                onChange={handleReceiptChange}
+                className="hidden" 
+              />
+              <input 
                 type="file" 
                 accept="application/pdf,image/jpeg,image/png,image/webp"
                 multiple
@@ -448,16 +468,29 @@ export default function NewShopWithReceiptPage() {
                 onChange={handleReceiptChange}
               />
               
-              <div className="flex flex-col items-center gap-4">
-                <button 
-                  onClick={() => scanInputRef.current?.click()}
-                  disabled={isScanning}
-                  className="btn-primary shadow-md shadow-indigo-200 px-8 py-3 rounded-full w-full max-w-sm"
-                >
-                  {isScanning ? "กำลังให้ AI อ่านข้อมูล... ⏳" : (receiptFiles.length > 0 ? "+ เพิ่มรูปภาพใบเสร็จอีก" : "1. คลิกที่นี่สำหรับรูปใบเสร็จรับเงิน/ใบกำกับภาษี")}
-                </button>
+              <div className="flex flex-col items-center gap-3">
+                <div className="flex flex-wrap justify-center gap-2 w-full max-w-md">
+                  <button 
+                    type="button"
+                    onClick={() => cameraScanInputRef.current?.click()}
+                    disabled={isScanning}
+                    className="btn-secondary flex-1 min-w-[140px] shadow-sm py-2.5 px-4 rounded-full flex items-center justify-center gap-1.5 text-sm font-semibold"
+                  >
+                    <span>📷</span>
+                    <span>{receiptFiles.length > 0 ? "ถ่ายรูปใบเสร็จเพิ่ม" : "ถ่ายรูปใบเสร็จ"}</span>
+                  </button>
+                  <button 
+                    type="button"
+                    onClick={() => scanInputRef.current?.click()}
+                    disabled={isScanning}
+                    className="btn-primary flex-1 min-w-[140px] shadow-md shadow-indigo-200 py-2.5 px-4 rounded-full flex items-center justify-center gap-1.5 text-sm font-semibold"
+                  >
+                    <span>📁</span>
+                    <span>{receiptFiles.length > 0 ? "เลือกรูปใบเสร็จเพิ่ม" : "เลือกรูปใบเสร็จจากเครื่อง"}</span>
+                  </button>
+                </div>
                 
-                <label className="flex items-center gap-2 cursor-pointer text-sm text-indigo-700 bg-white/50 px-4 py-2 rounded-lg border border-indigo-100 w-full max-w-sm">
+                <label className="flex items-center gap-2 cursor-pointer text-sm text-indigo-700 bg-white/50 px-4 py-2 rounded-lg border border-indigo-100 w-full max-w-md mt-1">
                   <input
                     type="checkbox"
                     checked={hasItemList}
@@ -473,7 +506,15 @@ export default function NewShopWithReceiptPage() {
                 </label>
                 
                 {hasItemList && (
-                  <div className="w-full max-w-sm animate-in fade-in slide-in-from-top-2">
+                  <div className="w-full max-w-md animate-in fade-in slide-in-from-top-2">
+                    <input 
+                      ref={cameraItemListInputRef}
+                      type="file" 
+                      accept="image/*"
+                      capture="environment"
+                      onChange={handleItemListChange}
+                      className="hidden" 
+                    />
                     <input 
                       type="file" 
                       accept="application/pdf,image/jpeg,image/png,image/webp"
@@ -482,13 +523,26 @@ export default function NewShopWithReceiptPage() {
                       ref={itemListInputRef}
                       onChange={handleItemListChange}
                     />
-                    <button 
-                      onClick={() => itemListInputRef.current?.click()}
-                      disabled={isScanning}
-                      className="btn-outline w-full px-8 py-3 rounded-full border-indigo-200 text-indigo-700 hover:bg-indigo-50"
-                    >
-                      {itemListFiles.length > 0 ? "+ เพิ่มรูปภาพรายการสินค้าอีก" : "2. คลิกที่นี่สำหรับเพิ่มรายการสินค้าหรือไฟล์ที่เกี่ยวข้อง"}
-                    </button>
+                    <div className="flex flex-wrap justify-center gap-2">
+                      <button 
+                        type="button"
+                        onClick={() => cameraItemListInputRef.current?.click()}
+                        disabled={isScanning}
+                        className="btn-secondary flex-1 min-w-[130px] py-2 px-3 rounded-full text-xs md:text-sm font-semibold flex items-center justify-center gap-1"
+                      >
+                        <span>📷</span>
+                        <span>{itemListFiles.length > 0 ? "ถ่ายรูปสินค้าเพิ่ม" : "ถ่ายรูปรายการสินค้า"}</span>
+                      </button>
+                      <button 
+                        type="button"
+                        onClick={() => itemListInputRef.current?.click()}
+                        disabled={isScanning}
+                        className="btn-outline flex-1 min-w-[130px] py-2 px-3 rounded-full border-indigo-200 text-indigo-700 hover:bg-indigo-50 text-xs md:text-sm font-semibold flex items-center justify-center gap-1"
+                      >
+                        <span>📁</span>
+                        <span>{itemListFiles.length > 0 ? "เลือกรูปสินค้าเพิ่ม" : "เลือกรูปสินค้าจากเครื่อง"}</span>
+                      </button>
+                    </div>
                   </div>
                 )}
 
@@ -625,6 +679,14 @@ export default function NewShopWithReceiptPage() {
             {!paidWithCash && (
               <div className="bg-slate-50 border border-slate-200 border-dashed rounded-xl p-6 text-center">
                 <input
+                  ref={cameraSlipInputRef}
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  onChange={handleSlipChange}
+                  className="hidden"
+                />
+                <input
                   ref={slipInputRef}
                   type="file"
                   accept="application/pdf,image/jpeg,image/png,image/webp"
@@ -635,24 +697,46 @@ export default function NewShopWithReceiptPage() {
                   <div>
                     <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-3 shadow-sm text-2xl">💸</div>
                     <p className="text-slate-600 font-medium mb-3">อัปโหลดสลิปโอนเงิน (Slip)</p>
-                    <button
-                      type="button"
-                      onClick={() => slipInputRef.current?.click()}
-                      className="btn-outline px-6 py-2"
-                    >
-                      เลือกรูปสลิป
-                    </button>
+                    <div className="flex flex-wrap justify-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => cameraSlipInputRef.current?.click()}
+                        className="btn-secondary px-5 py-2 rounded-full text-sm font-semibold flex items-center gap-1.5 shadow-sm"
+                      >
+                        <span>📷</span>
+                        <span>ถ่ายรูปสลิป</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => slipInputRef.current?.click()}
+                        className="btn-outline px-5 py-2 rounded-full text-sm font-semibold flex items-center gap-1.5 shadow-sm"
+                      >
+                        <span>📁</span>
+                        <span>เลือกรูปสลิปจากเครื่อง</span>
+                      </button>
+                    </div>
                   </div>
                 ) : (
                   <div>
                     <img src={slipPreview} alt="สลิป" className="max-h-48 rounded-lg border object-contain mx-auto shadow-sm mb-3" />
-                    <button
-                      type="button"
-                      onClick={() => slipInputRef.current?.click()}
-                      className="btn-outline px-6 py-2"
-                    >
-                      เปลี่ยนสลิป
-                    </button>
+                    <div className="flex flex-wrap justify-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => cameraSlipInputRef.current?.click()}
+                        className="btn-secondary px-4 py-1.5 rounded-full text-xs md:text-sm font-semibold flex items-center gap-1 shadow-sm"
+                      >
+                        <span>📷</span>
+                        <span>ถ่ายรูปสลิปใหม่</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => slipInputRef.current?.click()}
+                        className="btn-outline px-4 py-1.5 rounded-full text-xs md:text-sm font-semibold flex items-center gap-1 shadow-sm"
+                      >
+                        <span>📁</span>
+                        <span>เลือกรูปสลิปใหม่</span>
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
@@ -680,6 +764,14 @@ export default function NewShopWithReceiptPage() {
             {requireIdCard && (
               <div className="bg-slate-50 border border-slate-200 border-dashed rounded-xl p-6 text-center">
                 <input
+                  ref={cameraIdCardInputRef}
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  onChange={handleIdCardChange}
+                  className="hidden"
+                />
+                <input
                   ref={idCardInputRef}
                   type="file"
                   accept="application/pdf,image/jpeg,image/png,image/webp"
@@ -690,13 +782,24 @@ export default function NewShopWithReceiptPage() {
                   <div>
                     <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-3 shadow-sm text-2xl">🪪</div>
                     <p className="text-slate-600 font-medium mb-3">อัปโหลดสำเนาบัตรประชาชนผู้ขาย</p>
-                    <button
-                      type="button"
-                      onClick={() => idCardInputRef.current?.click()}
-                      className="btn-outline px-6 py-2"
-                    >
-                      เลือกไฟล์
-                    </button>
+                    <div className="flex flex-wrap justify-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => cameraIdCardInputRef.current?.click()}
+                        className="btn-secondary px-5 py-2 rounded-full text-sm font-semibold flex items-center gap-1.5 shadow-sm"
+                      >
+                        <span>📷</span>
+                        <span>ถ่ายรูปบัตรประชาชน</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => idCardInputRef.current?.click()}
+                        className="btn-outline px-5 py-2 rounded-full text-sm font-semibold flex items-center gap-1.5 shadow-sm"
+                      >
+                        <span>📁</span>
+                        <span>เลือกรูปบัตรจากเครื่อง</span>
+                      </button>
+                    </div>
                   </div>
                 ) : (
                   <div>
@@ -705,13 +808,24 @@ export default function NewShopWithReceiptPage() {
                     ) : (
                       <img src={idCardPreview} alt="สำเนาบัตร" className="max-h-48 rounded-lg border object-contain mx-auto shadow-sm mb-3" />
                     )}
-                    <button
-                      type="button"
-                      onClick={() => idCardInputRef.current?.click()}
-                      className="btn-outline px-6 py-2"
-                    >
-                      เปลี่ยนไฟล์
-                    </button>
+                    <div className="flex flex-wrap justify-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => cameraIdCardInputRef.current?.click()}
+                        className="btn-secondary px-4 py-1.5 rounded-full text-xs md:text-sm font-semibold flex items-center gap-1 shadow-sm"
+                      >
+                        <span>📷</span>
+                        <span>ถ่ายรูปบัตรใหม่</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => idCardInputRef.current?.click()}
+                        className="btn-outline px-4 py-1.5 rounded-full text-xs md:text-sm font-semibold flex items-center gap-1 shadow-sm"
+                      >
+                        <span>📁</span>
+                        <span>เลือกรูปบัตรใหม่</span>
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>

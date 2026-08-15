@@ -26,6 +26,7 @@ export default function PreImageUpload({
   uploadError,
 }: PreImageUploadProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -42,6 +43,9 @@ export default function PreImageUpload({
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
+      if (cameraInputRef.current) {
+        cameraInputRef.current.value = "";
+      }
     },
     [files, onChange]
   );
@@ -52,21 +56,39 @@ export default function PreImageUpload({
 
   return (
     <div className="card border-2 border-dashed border-slate-300 hover:border-indigo-400 transition-colors duration-200 shadow-none dark:bg-slate-800/50">
-      <div className="flex justify-between items-center mb-4">
+      <div className="flex flex-wrap justify-between items-center gap-2 mb-4">
         <p className="font-medium text-slate-700 dark:text-slate-300">{label}</p>
-        <button
-          type="button"
-          onClick={() => fileInputRef.current?.click()}
-          disabled={uploadStatus === "uploading"}
-          className="bg-indigo-100 text-indigo-700 hover:bg-indigo-200 px-3 py-1 rounded-full text-sm font-bold flex items-center gap-1 dark:bg-indigo-900/40 dark:text-indigo-400"
-        >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          เพิ่มไฟล์
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => cameraInputRef.current?.click()}
+            disabled={uploadStatus === "uploading"}
+            className="bg-emerald-100 text-emerald-800 hover:bg-emerald-200 px-3 py-1.5 rounded-full text-xs md:text-sm font-semibold flex items-center gap-1.5 transition-colors dark:bg-emerald-900/40 dark:text-emerald-300 shadow-sm"
+          >
+            <span>📷</span>
+            <span>ถ่ายรูป</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploadStatus === "uploading"}
+            className="bg-indigo-100 text-indigo-700 hover:bg-indigo-200 px-3 py-1.5 rounded-full text-xs md:text-sm font-semibold flex items-center gap-1.5 transition-colors dark:bg-indigo-900/40 dark:text-indigo-400 shadow-sm"
+          >
+            <span>📁</span>
+            <span>เลือกไฟล์</span>
+          </button>
+        </div>
       </div>
 
+      {/* Hidden Inputs: Camera and File Explorer */}
+      <input
+        ref={cameraInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        onChange={handleFileChange}
+        className="hidden"
+      />
       <input
         ref={fileInputRef}
         type="file"

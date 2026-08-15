@@ -26,6 +26,7 @@ export default function FileUpload({
   const [uploadedFileName, setUploadedFileName] = useState<string>("");
   const [error, setError] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -57,6 +58,8 @@ export default function FileUpload({
         setError("อัพโหลดไม่สำเร็จ: " + (err as Error).message);
       } finally {
         setUploading(false);
+        if (fileInputRef.current) fileInputRef.current.value = "";
+        if (cameraInputRef.current) cameraInputRef.current.value = "";
       }
     },
     [transactionId, fileType, transactionDate, type, onUploadComplete]
@@ -64,8 +67,17 @@ export default function FileUpload({
 
   return (
     <div className="border-2 border-dashed border-slate-300 rounded-xl p-4 hover:border-indigo-400 transition-colors duration-200">
-      <p className="text-sm font-medium text-slate-700 mb-2">{label}</p>
+      <p className="text-sm font-medium text-slate-700 mb-3">{label}</p>
 
+      <input
+        ref={cameraInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        onChange={handleFileChange}
+        className="hidden"
+        id={`camera-${fileType}`}
+      />
       <input
         ref={fileInputRef}
         type="file"
@@ -75,17 +87,30 @@ export default function FileUpload({
         id={`file-${fileType}`}
       />
 
-      <button
-        type="button"
-        onClick={() => fileInputRef.current?.click()}
-        disabled={uploading}
-        className="w-full py-3 px-4 border-2 border-slate-200 rounded-xl text-slate-500
-          hover:border-indigo-400 hover:text-indigo-600 hover:bg-indigo-50
-          focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500
-          disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
-      >
-        {uploading ? "กำลังอัพโหลด..." : uploaded ? "เปลี่ยนไฟล์" : "เลือกไฟล์"}
-      </button>
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={() => cameraInputRef.current?.click()}
+          disabled={uploading}
+          className="flex-1 min-w-[120px] py-2.5 px-3 border border-emerald-200 bg-emerald-50 text-emerald-800 rounded-xl text-xs md:text-sm font-semibold
+            hover:bg-emerald-100 hover:border-emerald-300
+            disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center gap-1.5 shadow-sm"
+        >
+          <span>📷</span>
+          <span>{uploading ? "กำลังอัพโหลด..." : uploaded ? "ถ่ายรูปใหม่" : "ถ่ายรูป"}</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={uploading}
+          className="flex-1 min-w-[120px] py-2.5 px-3 border border-indigo-200 bg-indigo-50 text-indigo-700 rounded-xl text-xs md:text-sm font-semibold
+            hover:bg-indigo-100 hover:border-indigo-300
+            disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center gap-1.5 shadow-sm"
+        >
+          <span>📁</span>
+          <span>{uploading ? "กำลังอัพโหลด..." : uploaded ? "เปลี่ยนไฟล์" : "เลือกไฟล์"}</span>
+        </button>
+      </div>
 
       {uploaded && (
         <p className="mt-2 text-sm text-emerald-600 font-medium">

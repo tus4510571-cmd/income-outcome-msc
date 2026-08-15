@@ -43,8 +43,11 @@ export default function CreateEmployeeLaborTransactionPage() {
   const [receiveFile, setReceiveFile] = useState<File | null>(null);
   
   const slipInputRef = useRef<HTMLInputElement>(null);
+  const cameraSlipInputRef = useRef<HTMLInputElement>(null);
   const idInputRef = useRef<HTMLInputElement>(null);
+  const cameraIdInputRef = useRef<HTMLInputElement>(null);
   const receiveInputRef = useRef<HTMLInputElement>(null);
+  const cameraReceiveInputRef = useRef<HTMLInputElement>(null);
 
   const [uploadStatus, setUploadStatus] = useState<"idle" | "uploading" | "complete" | "error">("idle");
   const [uploadTasks, setUploadTasks] = useState<UploadTask[]>([]);
@@ -353,38 +356,152 @@ export default function CreateEmployeeLaborTransactionPage() {
                   <div className="space-y-6">
                     {/* Part 2: Slip */}
                     <div>
-                      <label className="label">ส่วนที่ 2: สลิปเงินโอน <span className="text-red-500">*</span></label>
+                      <div className="flex flex-wrap justify-between items-center gap-2 mb-2">
+                        <label className="label mb-0">ส่วนที่ 2: สลิปเงินโอน <span className="text-red-500">*</span></label>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => cameraSlipInputRef.current?.click()}
+                            className="bg-emerald-100 text-emerald-800 hover:bg-emerald-200 px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1 transition-colors dark:bg-emerald-900/40 dark:text-emerald-300"
+                          >
+                            <span>📷</span>
+                            <span>ถ่ายรูป</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => slipInputRef.current?.click()}
+                            className="bg-indigo-100 text-indigo-700 hover:bg-indigo-200 px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1 transition-colors dark:bg-indigo-900/40 dark:text-indigo-400"
+                          >
+                            <span>📁</span>
+                            <span>เลือกไฟล์</span>
+                          </button>
+                        </div>
+                      </div>
                       <input 
+                        ref={cameraSlipInputRef}
+                        type="file" 
+                        accept="image/*"
+                        capture="environment"
+                        onChange={(e) => handleFileChange(e, setSlipFile)}
+                        className="hidden"
+                      />
+                      <input 
+                        ref={slipInputRef}
                         type="file" 
                         accept="application/pdf,image/jpeg,image/png,image/webp"
-                        ref={slipInputRef}
                         onChange={(e) => handleFileChange(e, setSlipFile)}
-                        className="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
+                        className="hidden"
                       />
+                      {slipFile ? (
+                        <div className="flex items-center justify-between p-3 bg-emerald-50 text-emerald-800 rounded-lg text-sm border border-emerald-200">
+                          <span className="truncate font-medium">✓ {slipFile.name}</span>
+                          <button type="button" onClick={() => setSlipFile(null)} className="text-red-500 hover:text-red-700 ml-2 font-bold">ลบ</button>
+                        </div>
+                      ) : (
+                        <div className="p-3 bg-slate-50 text-slate-400 rounded-lg text-xs text-center border border-dashed border-slate-200">
+                          ยังไม่ได้เลือกไฟล์สลิป (กดปุ่มถ่ายรูป หรือเลือกไฟล์ด้านบน)
+                        </div>
+                      )}
                     </div>
                     
                     {/* Part 3: ID Card */}
                     <div className="pt-4 border-t border-slate-100">
-                      <label className="label">ส่วนที่ 3: สำเนาบัตรประชาชน <span className="text-red-500">*</span></label>
+                      <div className="flex flex-wrap justify-between items-center gap-2 mb-2">
+                        <label className="label mb-0">ส่วนที่ 3: สำเนาบัตรประชาชน <span className="text-red-500">*</span></label>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => cameraIdInputRef.current?.click()}
+                            className="bg-emerald-100 text-emerald-800 hover:bg-emerald-200 px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1 transition-colors dark:bg-emerald-900/40 dark:text-emerald-300"
+                          >
+                            <span>📷</span>
+                            <span>ถ่ายรูป</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => idInputRef.current?.click()}
+                            className="bg-indigo-100 text-indigo-700 hover:bg-indigo-200 px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1 transition-colors dark:bg-indigo-900/40 dark:text-indigo-400"
+                          >
+                            <span>📁</span>
+                            <span>เลือกไฟล์</span>
+                          </button>
+                        </div>
+                      </div>
                       <input 
+                        ref={cameraIdInputRef}
+                        type="file" 
+                        accept="image/*"
+                        capture="environment"
+                        onChange={(e) => handleFileChange(e, setIdFile)}
+                        className="hidden"
+                      />
+                      <input 
+                        ref={idInputRef}
                         type="file" 
                         accept="application/pdf,image/jpeg,image/png,image/webp"
-                        ref={idInputRef}
                         onChange={(e) => handleFileChange(e, setIdFile)}
-                        className="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
+                        className="hidden"
                       />
+                      {idFile ? (
+                        <div className="flex items-center justify-between p-3 bg-emerald-50 text-emerald-800 rounded-lg text-sm border border-emerald-200">
+                          <span className="truncate font-medium">✓ {idFile.name}</span>
+                          <button type="button" onClick={() => setIdFile(null)} className="text-red-500 hover:text-red-700 ml-2 font-bold">ลบ</button>
+                        </div>
+                      ) : (
+                        <div className="p-3 bg-slate-50 text-slate-400 rounded-lg text-xs text-center border border-dashed border-slate-200">
+                          ยังไม่ได้เลือกสำเนาบัตรประชาชน (กดปุ่มถ่ายรูป หรือเลือกไฟล์ด้านบน)
+                        </div>
+                      )}
                     </div>
 
                     {/* Part 4: Signed Receipt */}
                     <div className="pt-4 border-t border-slate-100">
-                      <label className="label">ส่วนที่ 4: ใบสำคัญรับเงิน (เซ็นแล้ว) <span className="text-red-500">*</span></label>
+                      <div className="flex flex-wrap justify-between items-center gap-2 mb-2">
+                        <label className="label mb-0">ส่วนที่ 4: ใบสำคัญรับเงิน (เซ็นแล้ว) <span className="text-red-500">*</span></label>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => cameraReceiveInputRef.current?.click()}
+                            className="bg-emerald-100 text-emerald-800 hover:bg-emerald-200 px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1 transition-colors dark:bg-emerald-900/40 dark:text-emerald-300"
+                          >
+                            <span>📷</span>
+                            <span>ถ่ายรูป</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => receiveInputRef.current?.click()}
+                            className="bg-indigo-100 text-indigo-700 hover:bg-indigo-200 px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1 transition-colors dark:bg-indigo-900/40 dark:text-indigo-400"
+                          >
+                            <span>📁</span>
+                            <span>เลือกไฟล์</span>
+                          </button>
+                        </div>
+                      </div>
                       <input 
+                        ref={cameraReceiveInputRef}
+                        type="file" 
+                        accept="image/*"
+                        capture="environment"
+                        onChange={(e) => handleFileChange(e, setReceiveFile)}
+                        className="hidden"
+                      />
+                      <input 
+                        ref={receiveInputRef}
                         type="file" 
                         accept="application/pdf,image/jpeg,image/png,image/webp"
-                        ref={receiveInputRef}
                         onChange={(e) => handleFileChange(e, setReceiveFile)}
-                        className="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
+                        className="hidden"
                       />
+                      {receiveFile ? (
+                        <div className="flex items-center justify-between p-3 bg-emerald-50 text-emerald-800 rounded-lg text-sm border border-emerald-200">
+                          <span className="truncate font-medium">✓ {receiveFile.name}</span>
+                          <button type="button" onClick={() => setReceiveFile(null)} className="text-red-500 hover:text-red-700 ml-2 font-bold">ลบ</button>
+                        </div>
+                      ) : (
+                        <div className="p-3 bg-slate-50 text-slate-400 rounded-lg text-xs text-center border border-dashed border-slate-200">
+                          ยังไม่ได้เลือกใบสำคัญรับเงิน (กดปุ่มถ่ายรูป หรือเลือกไฟล์ด้านบน)
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>

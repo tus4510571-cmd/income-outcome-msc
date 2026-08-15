@@ -35,6 +35,7 @@ export default function NewBranchTransferPage() {
   
   const [selectedFiles, setSelectedFiles] = useState<{ id: string; file: File; name: string; url: string }[]>([]);
   const pdfInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
 
   const [mergedPdfBase64, setMergedPdfBase64] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(false);
@@ -62,6 +63,7 @@ export default function NewBranchTransferPage() {
     
     setSelectedFiles(prev => [...prev, ...newFiles]);
     if (pdfInputRef.current) pdfInputRef.current.value = "";
+    if (cameraInputRef.current) cameraInputRef.current.value = "";
   };
 
   const removeFile = (id: string) => {
@@ -339,20 +341,36 @@ export default function NewBranchTransferPage() {
 
           {/* Multiple Files Upload */}
           <div>
-            <div className="flex justify-between items-end mb-2">
+            <div className="flex flex-wrap justify-between items-center gap-2 mb-2">
               <label className="label mb-0">ยอดขายจากสาขา (PDF/Image)</label>
-              <button
-                type="button"
-                onClick={() => pdfInputRef.current?.click()}
-                className="text-indigo-600 text-sm font-medium hover:text-indigo-700 flex items-center gap-1"
-              >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
-                เพิ่มไฟล์
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => cameraInputRef.current?.click()}
+                  className="bg-emerald-100 text-emerald-800 hover:bg-emerald-200 px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-colors dark:bg-emerald-900/40 dark:text-emerald-300 shadow-sm"
+                >
+                  <span>📷</span>
+                  <span>ถ่ายรูป</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => pdfInputRef.current?.click()}
+                  className="bg-indigo-100 text-indigo-700 hover:bg-indigo-200 px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-colors dark:bg-indigo-900/40 dark:text-indigo-400 shadow-sm"
+                >
+                  <span>📁</span>
+                  <span>เลือกไฟล์</span>
+                </button>
+              </div>
             </div>
             
+            <input
+              ref={cameraInputRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              onChange={handleFileChange}
+              className="hidden"
+            />
             <input
               ref={pdfInputRef}
               type="file"
@@ -363,16 +381,27 @@ export default function NewBranchTransferPage() {
             />
             
             {selectedFiles.length === 0 ? (
-              <button
-                type="button"
-                onClick={() => pdfInputRef.current?.click()}
-                className="w-full py-8 px-4 border-2 border-dashed rounded-xl transition-all flex flex-col items-center justify-center gap-2 border-slate-300 text-slate-500 hover:border-indigo-400 hover:text-indigo-600 dark:border-slate-600"
-              >
-                <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                </svg>
-                <span className="font-medium">เลือกไฟล์ (สามารถเลือกได้หลายไฟล์)</span>
-              </button>
+              <div className="w-full py-8 px-4 border-2 border-dashed rounded-xl flex flex-col items-center justify-center gap-3 border-slate-300 text-slate-500 dark:border-slate-600">
+                <p className="font-medium text-slate-600 dark:text-slate-400">ยังไม่ได้เลือกไฟล์ยอดขาย</p>
+                <div className="flex flex-wrap justify-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => cameraInputRef.current?.click()}
+                    className="btn-secondary flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold shadow-sm"
+                  >
+                    <span>📷</span>
+                    <span>ถ่ายรูปบิล/ยอดขาย</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => pdfInputRef.current?.click()}
+                    className="btn-outline flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold shadow-sm"
+                  >
+                    <span>📁</span>
+                    <span>เลือกรูป/ไฟล์จากเครื่อง</span>
+                  </button>
+                </div>
+              </div>
             ) : (
               <div className="space-y-3">
                 {selectedFiles.map((f, index) => (

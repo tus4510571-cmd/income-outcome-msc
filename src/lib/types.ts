@@ -66,6 +66,18 @@ export interface IncomeDetail {
   invoice_ref?: string | null;
   deposit_info?: string | null;
   branch_name?: string | null;
+  // Customer Refund & Goods Return fields
+  is_refunded?: boolean | null;
+  refund_amount?: number | null;
+  refund_date?: string | null;
+  refund_reason?: string | null;
+  return_note_number?: string | null;
+  payment_voucher_number?: string | null;
+  refund_slip_path?: string | null;
+  refund_chat_proof_path?: string | null;
+  refund_no_chat_reason?: string | null;
+  refund_product_photo_path?: string | null;
+  customer_account_info?: string | null;
 }
 
 export interface ReceiptItem {

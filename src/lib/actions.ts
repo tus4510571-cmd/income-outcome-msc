@@ -687,3 +687,213 @@ export async function cancelRefund(transactionId: string) {
 
   return { success: true };
 }
+
+export async function getNextRNNumber(dateString: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  const parts = dateString.split("-");
+  const yyyy = parseInt(parts[0]) || new Date().getFullYear();
+  const mm = (parseInt(parts[1]) || (new Date().getMonth() + 1)).toString().padStart(2, "0");
+  const thaiYear2Digits = String(yyyy + 543).slice(-2);
+  const prefix = `RN${thaiYear2Digits}${mm}`;
+
+  if (!user) return `${prefix}0001`;
+
+  // Query all income_details with return_note_number starting with prefix
+  const { data: existingRecords } = await supabase
+    .from("income_details")
+    .select("return_note_number")
+    .like("return_note_number", `${prefix}%`);
+
+  let maxSeq = 0;
+  if (existingRecords && existingRecords.length > 0) {
+    for (const rec of existingRecords) {
+      if (rec.return_note_number && rec.return_note_number.startsWith(prefix)) {
+        const seqPart = rec.return_note_number.substring(prefix.length);
+        const seqNum = parseInt(seqPart, 10);
+        if (!isNaN(seqNum) && seqNum > maxSeq) {
+          maxSeq = seqNum;
+        }
+      }
+    }
+  }
+
+  const nextSeq = maxSeq + 1;
+  return `${prefix}${String(nextSeq).padStart(4, "0")}`;
+}
+
+export async function recordCustomerRefund(data: {
+  transactionId: string;
+  refundAmount: number;
+  refundDate: string;
+  refundReason: string;
+  customerAccountInfo?: string;
+  returnNoteNumber?: string;
+  paymentVoucherNumber?: string;
+  refundSlipBase64?: string;
+  refundSlipName?: string;
+  refundChatProofBase64?: string;
+  refundChatProofName?: string;
+  refundNoChatReason?: string;
+  refundProductPhotoBase64?: string;
+  refundProductPhotoName?: string;
+}) {
+  const user = await getAuthUser();
+  const supabase = await createClient();
+
+  const { data: tx } = await supabase
+    .from("transactions")
+    .select("*, income_detail:income_details(*)")
+    .eq("id", data.transactionId)
+    .eq("user_id", user.id)
+    .single();
+
+  if (!tx) throw new Error("ไม่พบรายการธุรกรรมรายรับ");
+
+  const incomeFolderId = await getSetting("income_drive_folder_id") || await getSetting("outcome_drive_folder_id");
+  let refundSlipPath = tx.income_detail?.refund_slip_path || null;
+  let refundChatProofPath = tx.income_detail?.refund_chat_proof_path || null;
+  let refundProductPhotoPath = tx.income_detail?.refund_product_photo_path || null;
+
+  const returnNoteNo = data.returnNoteNumber || await getNextRNNumber(data.refundDate);
+  const paymentVoucherNo = data.paymentVoucherNumber || await getNextPVNumber(data.refundDate);
+
+  // Upload Refund Slip
+  if (data.refundSlipBase64) {
+    if (incomeFolderId) {
+      try {
+        const { uploadToGoogleDrive } = await import("./drive");
+        const res = await uploadToGoogleDrive(
+          data.refundSlipBase64,
+          incomeFolderId,
+          `สลิปโอนคืนลูกค้า_${returnNoteNo}_${data.transactionId.substring(0, 6)}`,
+          data.refundDate,
+          "Customer_Refund"
+        );
+        if (res?.link) refundSlipPath = res.link;
+      } catch (err) {
+        console.warn("Drive upload fallback:", err);
+      }
+    }
+    if (!refundSlipPath || !refundSlipPath.includes("drive.google.com")) {
+      const res = await uploadFile(
+        data.transactionId,
+        "refund_slip",
+        data.refundDate,
+        "income",
+        data.refundSlipName || "refund_slip_customer.jpg",
+        data.refundSlipBase64
+      );
+      refundSlipPath = res.filePath;
+    }
+  }
+
+  // Upload Chat Proof
+  if (data.refundChatProofBase64) {
+    if (incomeFolderId) {
+      try {
+        const { uploadToGoogleDrive } = await import("./drive");
+        const res = await uploadToGoogleDrive(
+          data.refundChatProofBase64,
+          incomeFolderId,
+          `หลักฐานแชทขอคืนเงิน_${returnNoteNo}_${data.transactionId.substring(0, 6)}`,
+          data.refundDate,
+          "Customer_Refund"
+        );
+        if (res?.link) refundChatProofPath = res.link;
+      } catch (err) {
+        console.warn("Drive upload fallback:", err);
+      }
+    }
+    if (!refundChatProofPath || !refundChatProofPath.includes("drive.google.com")) {
+      const res = await uploadFile(
+        data.transactionId,
+        "refund_chat_proof",
+        data.refundDate,
+        "income",
+        data.refundChatProofName || "refund_chat_customer.jpg",
+        data.refundChatProofBase64
+      );
+      refundChatProofPath = res.filePath;
+    }
+  }
+
+  // Upload Damaged Product Photo
+  if (data.refundProductPhotoBase64) {
+    if (incomeFolderId) {
+      try {
+        const { uploadToGoogleDrive } = await import("./drive");
+        const res = await uploadToGoogleDrive(
+          data.refundProductPhotoBase64,
+          incomeFolderId,
+          `รูปสินค้าที่รับคืน_${returnNoteNo}_${data.transactionId.substring(0, 6)}`,
+          data.refundDate,
+          "Customer_Refund"
+        );
+        if (res?.link) refundProductPhotoPath = res.link;
+      } catch (err) {
+        console.warn("Drive upload fallback:", err);
+      }
+    }
+    if (!refundProductPhotoPath || !refundProductPhotoPath.includes("drive.google.com")) {
+      const res = await uploadFile(
+        data.transactionId,
+        "refund_product_photo",
+        data.refundDate,
+        "income",
+        data.refundProductPhotoName || "refund_product_damaged.jpg",
+        data.refundProductPhotoBase64
+      );
+      refundProductPhotoPath = res.filePath;
+    }
+  }
+
+  // Update income_details
+  const { error: updateError } = await supabase
+    .from("income_details")
+    .update({
+      is_refunded: true,
+      refund_amount: Number(data.refundAmount),
+      refund_date: data.refundDate,
+      refund_reason: data.refundReason,
+      return_note_number: returnNoteNo,
+      payment_voucher_number: paymentVoucherNo,
+      refund_slip_path: refundSlipPath,
+      refund_chat_proof_path: refundChatProofPath,
+      refund_no_chat_reason: data.refundNoChatReason || null,
+      refund_product_photo_path: refundProductPhotoPath,
+      customer_account_info: data.customerAccountInfo || null,
+    })
+    .eq("transaction_id", data.transactionId);
+
+  if (updateError) throw new Error("ไม่สามารถบันทึกข้อมูลการคืนเงินลูกค้าได้: " + updateError.message);
+
+  return { success: true, returnNoteNumber: returnNoteNo, paymentVoucherNumber: paymentVoucherNo };
+}
+
+export async function cancelCustomerRefund(transactionId: string) {
+  const user = await getAuthUser();
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from("income_details")
+    .update({
+      is_refunded: false,
+      refund_amount: 0,
+      refund_date: null,
+      refund_reason: null,
+      return_note_number: null,
+      payment_voucher_number: null,
+      refund_slip_path: null,
+      refund_chat_proof_path: null,
+      refund_no_chat_reason: null,
+      refund_product_photo_path: null,
+      customer_account_info: null,
+    })
+    .eq("transaction_id", transactionId);
+
+  if (error) throw new Error("ไม่สามารถยกเลิกสถานะคืนเงินลูกค้าได้: " + error.message);
+
+  return { success: true };
+}

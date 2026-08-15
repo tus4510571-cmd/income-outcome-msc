@@ -4,6 +4,7 @@ import Link from "next/link";
 import IncomeDetailContent from "./IncomeDetailContent";
 
 import TransactionActions from "@/components/TransactionActions";
+import CustomerRefundTimeline from "@/components/CustomerRefundTimeline";
 
 export default async function PaymentLinkDetailPage({
   params,
@@ -54,6 +55,9 @@ export default async function PaymentLinkDetailPage({
           </div>
           <TransactionActions id={transaction.id} backUrl="/income/payment-link" />
         </div>
+
+        <CustomerRefundTimeline transaction={transaction} />
+
         <IncomeDetailContent transaction={transaction} />
       </div>
     </main>

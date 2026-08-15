@@ -4,6 +4,7 @@ import Link from "next/link";
 import IncomeDetailContent from "./IncomeDetailContent";
 
 import TransactionActions from "@/components/TransactionActions";
+import CustomerRefundTimeline from "@/components/CustomerRefundTimeline";
 
 export default async function BranchTransferDetailPage({
   params,
@@ -45,7 +46,7 @@ export default async function BranchTransferDetailPage({
             </Link>
             <div>
               <h1 className="text-2xl md:text-3xl font-extrabold text-slate-800 tracking-tight">
-                {transaction.description || "รายละเอียตรายรับ"}
+                {transaction.description || "รายละเอียดรายรับ"}
               </h1>
               <p className="text-slate-500 mt-1">
                 {transaction.income_detail?.customer_name || "โอนจากสาขา"} | <span className="font-medium text-emerald-600">฿{transaction.amount.toLocaleString()}</span>
@@ -54,6 +55,9 @@ export default async function BranchTransferDetailPage({
           </div>
           <TransactionActions id={transaction.id} backUrl="/income/branch-transfer" />
         </div>
+
+        <CustomerRefundTimeline transaction={transaction} />
+
         <IncomeDetailContent transaction={transaction} />
       </div>
     </main>

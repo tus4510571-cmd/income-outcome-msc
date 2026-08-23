@@ -79,10 +79,12 @@ If you add tests, document the framework choice here and add the npm script.
 
 ## 6. Deployment
 
-**Not documented in the repo.** No vercel.json / Dockerfile / CI config
-exists; hosting target is unknown (flagged in `PROJECT_STATUS.md`). Do not
-assume Vercel-specific limits apply — though `pdfUtils.ts` comments suggest
-a ~4.5 MB server-action payload limit was considered during development.
+Production hosting is **Vercel**, wired through the GitHub integration:
+every push to `main` (`git push origin main`) triggers an automatic
+production deployment. No manual deploy step exists. Check build/runtime
+status in the Vercel project dashboard (access not managed in-repo).
+Note: `pdfUtils.ts` comments indicate a ~4.5 MB server-action payload limit
+was considered during development, consistent with Vercel.
 
 ## 7. Troubleshooting
 

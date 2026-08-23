@@ -61,8 +61,9 @@ the actual codebase after being discovered describing a foreign app
 
 ## Risks and unknowns
 
-- **Deployment target undocumented** — how/where production runs is not
-  captured anywhere in the repo. Ask the owner or inspect hosting dashboard.
+- **Deployment = Vercel auto-deploy from `main`** (confirmed by owner,
+  2026-08-23); Vercel project access/ownership still needs to be recorded
+  in HANDOVER.
 - **GAS Web App source code is outside this repo** — the Drive integration's
   contract is documented here (lib/drive.ts), but the Apps Script project
   itself must be obtained from the business owner.
@@ -77,4 +78,4 @@ the actual codebase after being discovered describing a foreign app
 2. Decide quotation data model, then implement create flow.
 3. Add minimal smoke tests (Vitest) for Server Actions numbering helpers.
 4. Remove `googleapis` dependency; move root one-off scripts into /scripts.
-5. Document deployment pipeline once known.
+5. ~~Document deployment pipeline~~ Done 2026-08-23: Vercel auto-deploy from main.

@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import TransactionList from "@/components/TransactionList";
-import TransactionCard from "@/components/TransactionCard";
+import EmployeeLaborHelpBox from "@/components/EmployeeLaborHelpBox";
 
 export default async function EmployeeLaborPage() {
   const supabase = await createClient();
@@ -41,6 +41,8 @@ export default async function EmployeeLaborPage() {
             </Link>
           </div>
         </div>
+
+        <EmployeeLaborHelpBox />
 
         <TransactionList transactions={transactions as any[]} baseHref="/outcome/employee-labor/" />
       </div>

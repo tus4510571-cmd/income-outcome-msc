@@ -46,8 +46,8 @@ Agents: never hardcode values for these keys; always read/write through
 | Environment | URL | Notes |
 |---|---|---|
 | Local | http://localhost:3000 | real Supabase project + real Gemini calls; no mocks |
-| Production | **undocumented** | hosting/deploy pipeline unknown — see PROJECT_STATUS risks |
-| Staging | none | does not exist |
+| Production | Vercel (auto-deploy on push to `main` via GitHub integration) | check build status in Vercel project dashboard |
+| Staging | none | does not exist — preview deploys per PR if Vercel GitHub app configured for them |
 
 ## 5. Secrets management
 

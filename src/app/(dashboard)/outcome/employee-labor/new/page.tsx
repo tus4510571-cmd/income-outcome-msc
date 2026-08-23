@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { convertImageToPdfBase64, mergePdfBase64 } from "@/lib/pdfUtils";
 import { uploadToGoogleDrive } from "@/lib/drive";
 import { getSetting, createTransaction, saveGoogleDriveFileLink } from "@/lib/actions";
+import EmployeeLaborHelpBox from "@/components/EmployeeLaborHelpBox";
 
 type EmployeeReceipt = {
   id: string;
@@ -256,15 +257,7 @@ export default function CreateEmployeeLaborTransactionPage() {
           </button>
         </div>
 
-        <div className="mb-6 p-4 bg-blue-50 border-2 border-blue-200 rounded-xl text-sm text-blue-900 space-y-1">
-          <p className="font-bold mb-2">วิธีใช้งานในหน้านี้</p>
-          <p>1. จำเป็นต้องสร้าง ใบสำคัญรับเงิน ขึ้นมาก่อน</p>
-          <p>2. เมื่อสร้างใบสำคัญรับเงิน ให้กดปุ่ม &quot;ข้อมูลที่ถูกสร้างไว้แล้ว - สร้างรายการใหม่&quot; ที่หน้าค่าจ้างบริการ</p>
-          <p>3. ในหน้านี้ ให้เลือกวันที่/เดือนที่สร้างใบสำคัญรับเงิน จะมีรายการแสดงออกมา ให้กดเลือกรายการที่ต้องการ</p>
-          <p>4. มี 2 กรณี:</p>
-          <p className="pl-4"><b>4.1</b> ปริ้นออกมาและพนักงานเซ็นต์เรียบร้อยแล้ว → อัปโหลดครบ ส่วนที่ 2: สลิปเงินโอน / ส่วนที่ 3: สำเนาบัตรประชาชน / ส่วนที่ 4: ใบสำคัญรับเงิน (เซ็นแล้ว) ได้เลย — ระบบ merge PDF และบันทึกลง Google Drive เป็นอัน complete</p>
-          <p className="pl-4"><b>4.2</b> ยังไม่ได้ปริ้น → อัปโหลดแค่ ส่วนที่ 2: สลิปเงินโอน (ไม่บังคับส่วน 3/4) — ระบบจะบันทึกเป็น incomplete พอได้เอกสารที่เหลือ ให้กลับมาอัปโหลดที่หน้ารายละเอียดของรายการ ระบบจะ merge ไฟล์และ save ลง Google Drive ให้อัตโนมัติ</p>
-        </div>
+        <EmployeeLaborHelpBox />
 
         {uploadStatus === "complete" ? (
           <div className="card text-center py-12">

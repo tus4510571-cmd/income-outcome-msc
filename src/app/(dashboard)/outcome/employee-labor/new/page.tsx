@@ -107,24 +107,21 @@ export default function CreateEmployeeLaborTransactionPage() {
 
   const handleSubmit = async () => {
     if (!selectedReceipt) return;
-    
-    const missingFields = [];
-    if (!slipFile) missingFields.push("สลิปโอนเงิน");
-    if (!idFile) missingFields.push("สำเนาบัตรประชาชน");
-    if (!receiveFile) missingFields.push("ใบสำคัญรับเงิน");
 
-    if (missingFields.length > 0) {
-      alert("ไม่สามารถบันทึกได้ กรุณาแนบไฟล์ต่อไปนี้ให้ครบถ้วน:\n- " + missingFields.join("\n- "));
+    if (!slipFile) {
+      alert("ไม่สามารถบันทึกได้ กรุณาแนบสลิปโอนเงิน (ส่วนที่ 2) อย่างน้อย 1 ไฟล์");
       return;
     }
+
+    const willMerge = !!(idFile && receiveFile);
 
     setUploadStatus("uploading");
     setOverallError("");
     setUploadTasks([
-      { id: "slip", name: "สลิปโอนเงิน", status: "pending" },
-      { id: "id_card", name: "สำเนาบัตร ปชช.", status: "pending" },
-      { id: "receipt", name: "ใบสำคัญรับเงิน", status: "pending" },
-      { id: "merge", name: "รวมไฟล์ PDF", status: "pending" }
+      { id: "slip", name: "สลิปโอนเงิน", status: "pending" as const },
+      ...(idFile ? [{ id: "id_card", name: "สำเนาบัตร ปชช.", status: "pending" as const }] : []),
+      ...(receiveFile ? [{ id: "receipt", name: "ใบสำคัญรับเงิน (เซ็นแล้ว)", status: "pending" as const }] : []),
+      ...(willMerge ? [{ id: "merge", name: "รวมไฟล์ PDF (sum)", status: "pending" as const }] : []),
     ]);
 
     const date = selectedReceipt.start_date;
@@ -145,7 +142,7 @@ export default function CreateEmployeeLaborTransactionPage() {
         { file: receiveFile, suffix: "receive", taskId: "receipt" }
       ];
 
-      const uploadedFiles: { taskId: string, link: string }[] = [];
+      const uploadedFiles: { taskId: string, link: string, name: string }[] = [];
       const base64PdfsToMerge: string[] = [];
 
       for (const item of filesToUpload) {
@@ -175,7 +172,7 @@ export default function CreateEmployeeLaborTransactionPage() {
             path: `Outcome/ค่าจ้างพนักงาน/${date.substring(0,7)}/${fileName}.pdf`
           } : t));
           
-          uploadedFiles.push({ taskId: item.taskId, link: res.link || "" });
+          uploadedFiles.push({ taskId: item.taskId, link: res.link || "", name: fileName });
 
         } catch (fileErr: any) {
           setUploadTasks(prev => prev.map(t => t.id === item.taskId ? { 
@@ -187,8 +184,8 @@ export default function CreateEmployeeLaborTransactionPage() {
         }
       }
 
-      // Merge PDFs
-      if (base64PdfsToMerge.length > 0) {
+      // Merge PDFs (only when all 3 documents present -> complete)
+      if (willMerge && base64PdfsToMerge.length > 0) {
         setUploadTasks(prev => prev.map(t => t.id === "merge" ? { ...t, status: "uploading" } : t));
         try {
           const mergedPdfBase64 = await mergePdfBase64(base64PdfsToMerge);
@@ -201,7 +198,7 @@ export default function CreateEmployeeLaborTransactionPage() {
             link: res.link,
             path: `Outcome/${date.substring(0,7)}/${sumFileName}.pdf`
           } : t));
-          uploadedFiles.push({ taskId: "merge", link: res.link || "" });
+          uploadedFiles.push({ taskId: "merge", link: res.link || "", name: sumFileName });
         } catch (e: any) {
           setUploadTasks(prev => prev.map(t => t.id === "merge" ? { ...t, status: "error", error: e.message } : t));
           throw new Error(`รวมไฟล์ไม่สำเร็จ: ${e.message}`);
@@ -231,7 +228,7 @@ export default function CreateEmployeeLaborTransactionPage() {
           transaction.id,
           fileTypeMap[uf.taskId] || "other",
           uf.link,
-          "drive-file.pdf"
+          uf.name
         );
       }
 
@@ -257,6 +254,16 @@ export default function CreateEmployeeLaborTransactionPage() {
           <button onClick={() => router.back()} className="text-slate-500 hover:text-slate-800 text-sm font-medium">
             ← กลับ
           </button>
+        </div>
+
+        <div className="mb-6 p-4 bg-blue-50 border-2 border-blue-200 rounded-xl text-sm text-blue-900 space-y-1">
+          <p className="font-bold mb-2">วิธีใช้งานในหน้านี้</p>
+          <p>1. จำเป็นต้องสร้าง ใบสำคัญรับเงิน ขึ้นมาก่อน</p>
+          <p>2. เมื่อสร้างใบสำคัญรับเงิน ให้กดปุ่ม &quot;ข้อมูลที่ถูกสร้างไว้แล้ว - สร้างรายการใหม่&quot; ที่หน้าค่าจ้างบริการ</p>
+          <p>3. ในหน้านี้ ให้เลือกวันที่/เดือนที่สร้างใบสำคัญรับเงิน จะมีรายการแสดงออกมา ให้กดเลือกรายการที่ต้องการ</p>
+          <p>4. มี 2 กรณี:</p>
+          <p className="pl-4"><b>4.1</b> ปริ้นออกมาและพนักงานเซ็นต์เรียบร้อยแล้ว → อัปโหลดครบ ส่วนที่ 2: สลิปเงินโอน / ส่วนที่ 3: สำเนาบัตรประชาชน / ส่วนที่ 4: ใบสำคัญรับเงิน (เซ็นแล้ว) ได้เลย — ระบบ merge PDF และบันทึกลง Google Drive เป็นอัน complete</p>
+          <p className="pl-4"><b>4.2</b> ยังไม่ได้ปริ้น → อัปโหลดแค่ ส่วนที่ 2: สลิปเงินโอน (ไม่บังคับส่วน 3/4) — ระบบจะบันทึกเป็น incomplete พอได้เอกสารที่เหลือ ให้กลับมาอัปโหลดที่หน้ารายละเอียดของรายการ ระบบจะ merge ไฟล์และ save ลง Google Drive ให้อัตโนมัติ</p>
         </div>
 
         {uploadStatus === "complete" ? (
@@ -407,7 +414,7 @@ export default function CreateEmployeeLaborTransactionPage() {
                     {/* Part 3: ID Card */}
                     <div className="pt-4 border-t border-slate-100">
                       <div className="flex flex-wrap justify-between items-center gap-2 mb-2">
-                        <label className="label mb-0">ส่วนที่ 3: สำเนาบัตรประชาชน <span className="text-red-500">*</span></label>
+                        <label className="label mb-0">ส่วนที่ 3: สำเนาบัตรประชาชน <span className="text-slate-400 text-xs font-normal">(ไม่บังคับ — อัปโหลดทีหลังได้)</span></label>
                         <div className="flex items-center gap-2">
                           <button
                             type="button"
@@ -457,7 +464,7 @@ export default function CreateEmployeeLaborTransactionPage() {
                     {/* Part 4: Signed Receipt */}
                     <div className="pt-4 border-t border-slate-100">
                       <div className="flex flex-wrap justify-between items-center gap-2 mb-2">
-                        <label className="label mb-0">ส่วนที่ 4: ใบสำคัญรับเงิน (เซ็นแล้ว) <span className="text-red-500">*</span></label>
+                        <label className="label mb-0">ส่วนที่ 4: ใบสำคัญรับเงิน (เซ็นแล้ว) <span className="text-slate-400 text-xs font-normal">(ไม่บังคับ — อัปโหลดทีหลังได้)</span></label>
                         <div className="flex items-center gap-2">
                           <button
                             type="button"
@@ -505,6 +512,24 @@ export default function CreateEmployeeLaborTransactionPage() {
                     </div>
                   </div>
                 </div>
+
+                {selectedReceipt && (!idFile || !receiveFile) && (
+                  <div className="p-4 bg-amber-50 text-amber-800 border border-amber-200 rounded-xl text-sm">
+                    <span className="font-bold">กรณี 4.2 — จะบันทึกเป็น Incomplete</span>{" "}
+                    (ยังขาด:{" "}
+                    {[
+                      !idFile ? "สำเนาบัตรประชาชน" : null,
+                      !receiveFile ? "ใบสำคัญรับเงิน (เซ็นแล้ว)" : null,
+                    ]
+                      .filter(Boolean)
+                      .join(", ")}
+                    )
+                    <div className="text-xs mt-1 text-amber-700">
+                      สลิปจะถูกบันทึกลง Google Drive ทันที และไม่มีการ merge ไฟล์
+                      จนกว่าจะกลับมาอัปโหลดเอกสารให้ครบที่หน้ารายละเอียดของรายการนี้
+                    </div>
+                  </div>
+                )}
 
                 {/* Tracking Progress */}
                 {uploadTasks.length > 0 && (

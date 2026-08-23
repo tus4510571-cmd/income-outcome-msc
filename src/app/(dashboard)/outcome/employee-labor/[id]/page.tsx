@@ -61,6 +61,7 @@ export default async function EmployeeLaborDetailPage({
           transactionId={transaction.id}
           transactionDate={transaction.transaction_date}
           existingFiles={transaction.files || []}
+          description={transaction.description}
         />
       </div>
     </main>

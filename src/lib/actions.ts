@@ -897,3 +897,17 @@ export async function cancelCustomerRefund(transactionId: string) {
 
   return { success: true };
 }
+
+export async function updateTransactionFilePath(fileRowId: string, filePath: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("ไม่พบผู้ใช้");
+
+  const { error } = await supabase
+    .from("transaction_files")
+    .update({ file_path: filePath })
+    .eq("id", fileRowId);
+
+  if (error) throw new Error("ไม่สามารถอัปเดตตำแหน่งไฟล์ได้: " + error.message);
+  return { success: true };
+}

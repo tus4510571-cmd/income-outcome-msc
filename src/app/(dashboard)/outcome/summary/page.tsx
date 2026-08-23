@@ -71,14 +71,25 @@ export default function SummaryPage() {
     }
     
     if (t.category === "employee_labor") {
+      const hasSlip = t.files?.some(f => f.file_type === "transfer_slip");
       const hasIdCard = t.files?.some(f => f.file_type === "id_card_copy");
       const hasEmployeeReceipt = t.files?.some(f => f.file_type === "employee_receipt");
-      return hasIdCard && hasEmployeeReceipt;
+      return !!(hasSlip && hasIdCard && hasEmployeeReceipt);
     }
 
     const cat = t.category as keyof typeof REQUIRED_FILES;
     const reqCount = REQUIRED_FILES[cat]?.length || 0;
     return (t.files?.length || 0) >= reqCount;
+  };
+
+  const getMissingDocs = (t: TransactionWithDetails): string[] => {
+    if (t.category !== "employee_labor") return [];
+    const uploaded = new Set((t.files || []).map(f => f.file_type));
+    const missing: string[] = [];
+    if (!uploaded.has("transfer_slip")) missing.push("สลิปเงินโอน");
+    if (!uploaded.has("id_card_copy")) missing.push("สำเนาบัตรประชาชน");
+    if (!uploaded.has("employee_receipt")) missing.push("ใบสำคัญรับเงิน(เซ็นแล้ว)");
+    return missing;
   };
 
   let filtered = transactions;
@@ -119,6 +130,7 @@ export default function SummaryPage() {
         "ช่องทางรับเงินคืน": isRefund ? (t.expense_detail?.refund_type === "via_personal" ? "ผ่านบัญชีส่วนตัว -> เข้าบริษัท" : "เข้าบัญชีบริษัทโดยตรง") : "-",
         "เหตุผลการคืนเงิน": isRefund ? (t.expense_detail?.refund_reason || "-") : "-",
         "สถานะเอกสาร": isComplete(t) ? "ครบถ้วน" : "ขาดเอกสาร",
+        "เอกสารที่ขาด": getMissingDocs(t).join(", ") || "-",
       };
     });
 

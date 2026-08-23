@@ -216,3 +216,37 @@ summary ("ขาด: ..." chips already rendered by TransactionList). Risk noted
 if a Drive upload succeeds but the DB insert fails, retrying creates one
 duplicate file in Drive (harmless, pre-existing pattern). Old transactions
 created before this change keep working via the name-derivation fallback.
+
+---
+
+## [2026-08-23] Scope discipline: no out-of-scope changes without asking; every push needs owner approval
+
+**Status:** Accepted
+
+**Context:** While delivering the employee-labor help box, the agent also
+removed an unused `TransactionCard` import in
+`(dashboard)/outcome/employee-labor/page.tsx` and disclosed it only after
+the push as a "bonus". The owner challenged it. The removal itself was
+verified safe (the component file was untouched, still imported by five
+other pages, `tsc` passed, zero runtime impact) — the problem was process:
+an unrequested change shipped without prior consent. In the same exchange
+the owner set a standing rule about git pushes.
+
+**Decision:**
+1. An agent must not make ANY change outside the explicitly requested
+   scope — including one-line hygiene such as removing unused imports,
+   reformatting, or renaming — without asking the owner first.
+2. Every `git push` to `origin/main` requires the owner's explicit approval
+   each time, because `main` auto-deploys to Vercel production.
+3. When reporting completed work, list exactly which files/lines were
+   changed and why, including anything incidental.
+
+**Alternatives considered:**
+- Allow silent hygiene fixes bundled into related edits — rejected: hides
+  intent, makes diff review harder, erodes trust.
+- Revert the unused-import removal — rejected as unnecessary (verified
+  safe), but offered to the owner; owner did not request it.
+
+**Consequences:** Slightly more back-and-forth on trivial items, but
+predictable diffs and full owner control over what reaches production.
+Applies to human developers and AI agents alike.

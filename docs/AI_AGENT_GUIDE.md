@@ -56,6 +56,13 @@ The product owner reads Thai; error messages thrown to users are in Thai.
 - Do not assume things that do not exist: no background jobs/queues, no
   teams/workspaces/multi-tenancy, no Stripe/OpenAI/pgvector, no CI, no test
   framework, no staging environment (see §5).
+- **Scope discipline:** never change anything outside the explicitly
+  requested scope — including one-line hygiene (unused imports, formatting,
+  renames) — without asking first. List every changed file/line when
+  reporting.
+- **Push approval:** never run `git push` without the owner's explicit
+  approval for that instance; pushing `main` auto-deploys to Vercel
+  production (see DECISIONS.md 2026-08-23 scope-discipline entry).
 
 ## 3. Code conventions the agent must follow
 

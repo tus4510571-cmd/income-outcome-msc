@@ -82,7 +82,7 @@ export async function mergePdfBase64(base64Pdfs: string[]): Promise<string> {
     if (!base64) continue;
     const pdfData = base64.split(',')[1] || base64;
     const uint8Array = Uint8Array.from(atob(pdfData), c => c.charCodeAt(0));
-    const pdfDoc = await PDFDocument.load(uint8Array);
+    const pdfDoc = await PDFDocument.load(uint8Array, { ignoreEncryption: true });
     const copiedPages = await mergedPdf.copyPages(pdfDoc, pdfDoc.getPageIndices());
     copiedPages.forEach((page) => mergedPdf.addPage(page));
   }

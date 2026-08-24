@@ -300,3 +300,19 @@ zero feedback on which files were being moved to the `delete transaction` folder
 
 **Consequences:** Better user transparency and reliable audit trail when deleting transactions.
 
+---
+
+## [2026-08-24] PDF merge: ignoreEncryption enabled for PDFDocument.load
+
+**Status:** Accepted
+
+**Context:** When merging employee-labor documents (or any PDFs) downloaded from
+Google Drive or bank slips with standard encryption/security metadata, `pdf-lib`
+threw `Input document to PDFDocument.load is encrypted`.
+
+**Decision:** Pass `{ ignoreEncryption: true }` into `PDFDocument.load(uint8Array, { ignoreEncryption: true })`
+in `mergePdfBase64` (`src/lib/pdfUtils.ts`).
+
+**Consequences:** Prevents runtime errors during `-sum` PDF merge when handling bank slips or PDFs with security metadata.
+
+

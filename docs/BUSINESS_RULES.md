@@ -48,8 +48,9 @@ Required-file maps live in `types.ts` (`REQUIRED_FILES`,
 - Drive uploads name files with the transaction context (Thai names) and may
   use subfolders ("Refund" for expense refunds, "Customer_Refund" for income
   refunds). The returned drive URL is stored as `file_path`.
-- Deleting a transaction moves its Drive files to a deleted area under the
-  configured folder id and removes Storage files; DB rows cascade-delete.
+- Deleting a transaction opens an interactive confirmation modal (`DeleteTransactionModal`),
+  moves all its Drive files to the "delete transaction" folder under that month's folder
+  in Google Drive with live step progress, and removes Storage files; DB rows cascade-delete.
 - Refund cancellation clears refund metadata but keeps uploaded evidence.
 
 ## 5. Document numbering

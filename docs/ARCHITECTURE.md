@@ -107,9 +107,9 @@ Update this tree whenever a top-level folder's purpose changes.
   detail page, auto download→merge→`-sum` when complete (DECISIONS
   2026-08-23).
 - **Files & Drive** (`actions.uploadFile/saveGoogleDriveFileLink/getSignedUrl/deleteTransaction`,
-  `lib/drive.ts`, `FileUpload`/`PreImageUpload`, `/api/drive-*`) — evidence
+  `lib/drive.ts`, `FileUpload`/`PreImageUpload`, `DeleteTransactionModal`, `/api/drive-*`) — evidence
   uploads to GAS-managed Drive or Supabase Storage; deletion moves Drive
-  files to a "_deleted" folder.
+  files to a "delete transaction" folder under that month with live status feedback.
 - **AI receipt scan** (`/api/scan-receipt`) — multi-image OCR to structured
   JSON with auto-balancing; model chosen at runtime from available flash models.
 - **Documents** (`ReceiptGenerator`, `ReceiptCaptureTemplate`,

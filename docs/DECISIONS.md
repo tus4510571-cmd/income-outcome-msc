@@ -278,3 +278,25 @@ the owner set a standing rule about git pushes.
 **Consequences:** Slightly more back-and-forth on trivial items, but
 predictable diffs and full owner control over what reaches production.
 Applies to human developers and AI agents alike.
+
+---
+
+## [2026-08-24] Transaction deletion: interactive progress modal with real-time Google Drive moveToDeleted feedback
+
+**Status:** Accepted
+
+**Context:** The old deletion flow used native `window.confirm()` and silently
+ignored Google Drive file moving errors if the GAS Web App failed, giving the user
+zero feedback on which files were being moved to the `delete transaction` folder.
+
+**Decision:**
+- Replaced `window.confirm` with `DeleteTransactionModal.tsx`.
+- Before deletion, fetches and lists all associated evidence files with the target
+  Google Drive folder path (`[YYYY] > [MM] > delete transaction`).
+- During execution, renders live step-by-step progress (check files → move in
+  Google Drive → delete row in Supabase).
+- Returns structured results `{ success, movedCount, driveSuccess, driveError }`
+  so any Drive error is surfaced clearly instead of being swallowed.
+
+**Consequences:** Better user transparency and reliable audit trail when deleting transactions.
+

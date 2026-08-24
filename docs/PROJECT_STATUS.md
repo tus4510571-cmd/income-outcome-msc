@@ -34,6 +34,7 @@ the actual codebase after being discovered describing a foreign app
 ## Recent changes log (from git history)
 
 ```
+[2026-08-24] feat(delete): add delete transaction progress modal with real-time Google Drive moveToDeleted feedback
 [2026-08-23] feat(employee-labor): detail-page late-upload confirm flow (select+preview -> Accept button -> per-step status -> auto -sum merge); incremental uploads supported
 [2026-08-23] feat(income-refund): customer refund & goods return system (RN/PV generator)
 [2026-08] feat: monthly PV document sequence (PV69080001)

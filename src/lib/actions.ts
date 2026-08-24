@@ -245,6 +245,34 @@ export async function getSignedUrl(filePath: string) {
   return data?.signedUrl || null;
 }
 
+export async function getTransactionFilesForDeletion(id: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("ไม่พบผู้ใช้");
+
+  const { data: tx } = await supabase
+    .from("transactions")
+    .select(`
+      id, type, category, description, amount, currency, transaction_date,
+      expense_detail:expense_details(employee_name, shop_name),
+      income_detail:income_details(customer_name)
+    `)
+    .eq("id", id)
+    .single();
+
+  if (!tx) throw new Error("ไม่พบข้อมูลรายการ");
+
+  const { data: files } = await supabase
+    .from("transaction_files")
+    .select("id, file_type, file_name, file_path")
+    .eq("transaction_id", id);
+
+  return {
+    transaction: tx,
+    files: files || []
+  };
+}
+
 export async function deleteTransaction(id: string) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -258,11 +286,15 @@ export async function deleteTransaction(id: string) {
 
   const { data: files } = await supabase
     .from("transaction_files")
-    .select("file_path")
+    .select("file_path, file_name, file_type")
     .eq("transaction_id", id);
+
+  let driveResult: { success: boolean; movedCount?: number; error?: string } = { success: true, movedCount: 0 };
+  let driveFilesCount = 0;
 
   if (files && files.length > 0 && tx) {
     const fileUrls = files.map((f) => f.file_path).filter(p => p.includes("drive.google.com"));
+    driveFilesCount = fileUrls.length;
     
     if (fileUrls.length > 0) {
       const folderKey = tx.type === "income" ? "income_drive_folder_id" : "outcome_drive_folder_id";
@@ -270,7 +302,9 @@ export async function deleteTransaction(id: string) {
       
       if (folderId) {
         const { moveFilesToDeleted } = await import("./drive");
-        await moveFilesToDeleted(fileUrls, folderId, tx.transaction_date);
+        driveResult = await moveFilesToDeleted(fileUrls, folderId, tx.transaction_date);
+      } else {
+        driveResult = { success: false, error: "ไม่พบ Folder ID สำหรับย้ายไฟล์ใน Google Drive" };
       }
     }
 
@@ -287,7 +321,15 @@ export async function deleteTransaction(id: string) {
     .eq("user_id", user.id);
 
   if (error) throw new Error(error.message);
-  return { success: true };
+
+  return {
+    success: true,
+    fileCount: files?.length || 0,
+    driveFilesCount,
+    movedCount: driveResult.movedCount ?? 0,
+    driveSuccess: driveResult.success,
+    driveError: driveResult.error,
+  };
 }
 
 export async function updateTransaction(

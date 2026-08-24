@@ -71,7 +71,7 @@ export async function moveFilesToDeleted(fileUrls: string[], folderId: string, t
   try {
     let gasUrl = await getSetting("google_apps_script_url");
     if (!gasUrl) {
-      throw new Error("Google Apps Script URL not found. Please connect in Settings.");
+      return { success: false, error: "Google Apps Script URL not found. Please connect in Settings." };
     }
 
     if (gasUrl.startsWith("http://")) {
@@ -79,9 +79,18 @@ export async function moveFilesToDeleted(fileUrls: string[], folderId: string, t
     }
 
     const fileIds = fileUrls.map(url => {
-      const match = url.match(/[-\w]{25,}/);
-      return match ? match[0] : null;
+      if (!url) return null;
+      const dMatch = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+      if (dMatch && dMatch[1]) return dMatch[1];
+      const idMatch = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+      if (idMatch && idMatch[1]) return idMatch[1];
+      const genericMatch = url.match(/[-\w]{25,}/);
+      return genericMatch ? genericMatch[0] : null;
     }).filter(Boolean);
+
+    if (fileIds.length === 0) {
+      return { success: true, movedCount: 0 };
+    }
 
     const response = await fetch(gasUrl, {
       method: "POST",
@@ -106,19 +115,19 @@ export async function moveFilesToDeleted(fileUrls: string[], folderId: string, t
       result = JSON.parse(responseText);
     } catch (e) {
       if (responseText.includes("IncomeOutcome GAS API is running")) {
-        throw new Error("Google Apps Script URL ไม่ถูกต้อง หรือเป็น Short URL (ทำให้ถูกแปลง POST เป็น GET) กรุณาตรวจสอบ URL ในหน้าตั้งค่าให้เป็นลิงก์ตรงที่ขึ้นต้นด้วย https://script.google.com");
+        return { success: false, error: "Google Apps Script URL ไม่ถูกต้อง หรือเป็น Short URL" };
       }
-      throw new Error(`การตอบกลับผิดพลาด: ${responseText.substring(0, 50)}...`);
+      return { success: false, error: `การตอบกลับผิดพลาด: ${responseText.substring(0, 50)}...` };
     }
     
     if (!result.success) {
-      console.warn("GAS move failed but continuing:", result.error);
+      console.warn("GAS move failed:", result.error);
+      return { success: false, error: result.error || "GAS moveToDeleted failed" };
     }
 
-    return { success: true, movedCount: result.movedCount || 0 };
+    return { success: true, movedCount: result.movedCount ?? fileIds.length };
   } catch (error) {
     console.error("Google Drive GAS Move Error:", error);
-    // Don't fail the whole transaction deletion if move fails
     return { success: false, error: (error as Error).message || "Failed to move files in Google Drive" };
   }
 }

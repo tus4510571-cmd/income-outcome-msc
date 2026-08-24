@@ -21,9 +21,9 @@ Income (`type = 'income'`):
 Outcome (`type = 'outcome'`):
 | Category | Meaning | Required files |
 |---|---|---|
-| shop_with_receipt | vendor purchases with tax receipt | transfer_slip, receipt |
-| shop_without_receipt | vendors without receipts (cash bill generated) | transfer_slip, receipt |
-| employee_labor | daily wages | transfer_slip, id_card_copy, employee_receipt |
+| shop_with_receipt | vendor purchases with tax receipt | transfer_slip, receipt, summary |
+| shop_without_receipt | vendors without receipts (cash bill generated) | receipt, summary (and transfer_slip if transfer) |
+| employee_labor | daily wages | transfer_slip, id_card_copy, employee_receipt, summary |
 
 Required-file maps live in `types.ts` (`REQUIRED_FILES`,
 `REQUIRED_INCOME_FILES`) — single source of truth.
@@ -85,14 +85,13 @@ Required-file maps live in `types.ts` (`REQUIRED_FILES`,
 ## 7. AI receipt scan rules (/api/scan-receipt)
 
 - Requires per-user `gemini_api_key` setting; otherwise HTTP 400.
-- Accepts multiple images in one request; they are compressed client-side
-  first (max width 1600, JPEG q≈0.8).
+- Accepts multiple images/PDFs in one request. Image files are compressed client-side
+  first (max width 1600, JPEG q≈0.8); PDF files bypass image canvas compression and are passed directly.
 - Extraction contract: JSON {shopName, address, taxId, date(YYYY-MM-DD),
   items[{name, quantity, price=UNIT price}], totalAmount}.
 - Date parsing handles Thai years: 2-digit year <50 → 20xx CE;
   ≥50 → พ.ศ. (convert by −543 after treating as 25xx); 4-digit พ.ศ. −543.
-- Model selection is runtime-adaptive: lists available models from Google's
-  REST endpoint, then tries each "flash" model until one succeeds.
+- Model selection prioritizes direct fast flash candidates (`gemini-2.5-flash`, `gemini-2.0-flash`, `gemini-1.5-flash`, `gemini-1.5-flash-8b`) before falling back to dynamic model listing.
 - Auto-balancing: if Σ(quantity×price) deviates from totalAmount by >0.01,
   append one adjustment item (positive or negative) named
   "ค่าสินค้า/บริการ (ยอดเพิ่มเติมให้ตรงบิล)" or "ส่วนลด/หักลบ (เพื่อให้ตรงบิล)".

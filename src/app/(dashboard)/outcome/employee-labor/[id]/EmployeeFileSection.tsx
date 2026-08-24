@@ -92,7 +92,11 @@ export default function EmployeeFileSection({
   const getUploaded = (fileType: string) =>
     existingFiles.some((f) => f.file_type === fileType);
 
-  const isComplete = CORE_TYPES.every((t) => getUploaded(t.type));
+  const allCoreUploaded = CORE_TYPES.every((t) => getUploaded(t.type));
+  const hasSummary = getUploaded("summary");
+  const isComplete = allCoreUploaded && hasSummary;
+  const isMissingSummaryOnly = allCoreUploaded && !hasSummary;
+
   const missingTypes = CORE_TYPES.filter((t) => !getUploaded(t.type));
   const missingLabels = missingTypes.map((t) => t.label);
   const selectedTypes = missingTypes.filter((t) => selections[t.type]?.file);
@@ -123,6 +127,54 @@ export default function EmployeeFileSection({
       delete next[fileType];
       return next;
     });
+
+  const runMergeOnly = async () => {
+    if (running) return;
+    setRunning(true);
+    setError("");
+    setTasks([{ id: "merge", name: "รวมไฟล์ PDF (-sum)", status: "uploading" }]);
+
+    try {
+      const folderId = await getSetting("outcome_drive_folder_id");
+      if (!folderId) throw new Error("ไม่พบ Folder ID สำหรับบันทึกไฟล์ (กรุณาตั้งค่าใน Settings)");
+
+      const baseName = deriveBaseName(existingFiles, transactionDate, description);
+      const pdfsToMerge: string[] = [];
+
+      for (const t of CORE_TYPES) {
+        const row = existingFiles.find((f) => f.file_type === t.type);
+        if (!row) throw new Error(`ไม่พบไฟล์ ${t.label}`);
+        const fileId = extractDriveFileId(row.file_path);
+        if (!fileId) throw new Error(`ไม่พบ fileId ของ ${row.file_name}`);
+        pdfsToMerge.push(await downloadFromGoogleDrive(fileId));
+      }
+
+      const mergedPdf = await mergePdfBase64(pdfsToMerge);
+      const sumName = `${baseName}-sum`;
+      const sRes = await uploadToGoogleDrive(
+        mergedPdf,
+        folderId,
+        sumName,
+        transactionDate,
+        ""
+      );
+      if (!sRes.success) throw new Error(sRes.error || "บันทึกไฟล์รวมไม่สำเร็จ");
+      await saveGoogleDriveFileLink(transactionId, "summary", sRes.link!, sumName);
+
+      setTask("merge", {
+        status: "success",
+        link: sRes.link,
+        path: `Outcome/${transactionDate.substring(0, 7)}/${sumName}.pdf`,
+      });
+      router.refresh();
+    } catch (err) {
+      const msg = (err as Error).message || "รวมไฟล์ไม่สำเร็จ";
+      setTask("merge", { status: "error", error: msg });
+      setError(msg);
+    } finally {
+      setRunning(false);
+    }
+  };
 
   const runPipeline = async () => {
     if (running || !hasSelection) return;
@@ -362,7 +414,16 @@ export default function EmployeeFileSection({
       <div className="card">
         <h2 className="text-lg font-semibold text-slate-800 mb-4">เอกสาร</h2>
 
-        {!isComplete && (
+        {isMissingSummaryOnly ? (
+          <div className="mb-4 p-4 bg-amber-50 border border-amber-200 rounded-xl">
+            <p className="text-sm font-bold text-amber-800">
+              สถานะ: Incomplete — เอกสารหลักครบ 3 รายการแล้ว แต่ยังไม่ได้รวมไฟล์ (-sum.pdf)
+            </p>
+            <p className="text-xs text-amber-600 mt-1">
+              ระบบมีไฟล์สลิป, สำเนาบัตร และใบสำคัญรับเงินครบแล้ว แต่ยังขาดไฟล์รวม PDF (-sum) กรุณากดปุ่ม <strong>&quot;รวมไฟล์ PDF (-sum) ลง Google Drive&quot;</strong> ด้านล่าง
+            </p>
+          </div>
+        ) : !isComplete ? (
           <div className="mb-4 p-4 bg-amber-50 border border-amber-200 rounded-xl">
             <p className="text-sm font-bold text-amber-800">
               สถานะ: Incomplete — ยังขาด {missingLabels.length} เอกสาร
@@ -374,8 +435,7 @@ export default function EmployeeFileSection({
               ให้อัตโนมัติ
             </p>
           </div>
-        )}
-        {isComplete && (
+        ) : (
           <div className="mb-4 p-3 bg-emerald-50 border border-emerald-200 rounded-xl">
             <p className="text-sm font-bold text-emerald-700">
               ✅ Complete — เอกสารครบถ้วนและ merge ไฟล์แล้ว
@@ -399,6 +459,30 @@ export default function EmployeeFileSection({
             }
             return <div key={ft.type}>{renderPicker(ft)}</div>;
           })}
+
+          {/* Show Merged PDF Summary file if present */}
+          {(() => {
+            const sumFile = existingFiles.find((f) => f.file_type === "summary");
+            if (!sumFile) return null;
+            return (
+              <div className="border-2 rounded-xl p-4 border-blue-300 bg-blue-50/50 mb-4">
+                <div className="flex justify-between items-center mb-2">
+                  <p className="text-sm font-bold text-blue-800">
+                    📄 ไฟล์รวมเอกสารทั้งหมด (-sum.pdf)
+                  </p>
+                  <a
+                    href={sumFile.file_path}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs font-bold text-blue-600 hover:underline bg-white px-2.5 py-1 rounded-lg border border-blue-200 shadow-sm"
+                  >
+                    เปิดดูไฟล์ ↗
+                  </a>
+                </div>
+                <FileImage filePath={sumFile.file_path} label="ไฟล์รวมเอกสาร (-sum.pdf)" />
+              </div>
+            );
+          })()}
         </div>
 
         <div className="mt-4">
@@ -416,11 +500,47 @@ export default function EmployeeFileSection({
                 {getUploaded(ft.type) ? "✓" : "✗"} {ft.label}
               </span>
             ))}
+            <span
+              className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${
+                hasSummary
+                  ? "bg-emerald-100 text-emerald-700"
+                  : "bg-amber-100 text-amber-700"
+              }`}
+            >
+              {hasSummary ? "✓" : "✗"} รวมไฟล์ (-sum)
+            </span>
           </div>
         </div>
       </div>
 
-      {!isComplete && (
+      {isMissingSummaryOnly ? (
+        <div className="card">
+          <button
+            type="button"
+            onClick={runMergeOnly}
+            disabled={running}
+            className={`w-full py-4 rounded-xl text-white font-bold text-lg transition-all shadow-md flex items-center justify-center gap-2 ${
+              running
+                ? "bg-slate-400 cursor-not-allowed"
+                : "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 hover:shadow-lg hover:-translate-y-0.5"
+            }`}
+          >
+            {running ? (
+              <>
+                <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
+                กำลังรวมไฟล์ PDF (-sum)...
+              </>
+            ) : (
+              "🔄 รวมไฟล์ PDF (-sum) ลง Google Drive"
+            )}
+          </button>
+          {!running && (
+            <p className="text-xs text-center text-slate-500 mt-2">
+              เอกสารครบ 3 รายการแล้ว กดปุ่มนี้เพื่อดึงไฟล์มารวมเป็น -sum.pdf และอัปโหลดขึ้น Google Drive
+            </p>
+          )}
+        </div>
+      ) : !isComplete ? (
         <div className="card">
           <button
             type="button"
@@ -448,7 +568,7 @@ export default function EmployeeFileSection({
             </p>
           )}
         </div>
-      )}
+      ) : null}
 
       {tasks.length > 0 && (
         <div className="card">

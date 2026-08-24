@@ -101,7 +101,8 @@ export default function NewShopWithReceiptPage() {
     try {
       // Compress files before sending to AI to avoid 4.5MB Payload limit
       const compressedBlobs = await Promise.all(files.map(async (f) => {
-        if (f.type === "application/pdf") return f; // Don't compress PDFs here
+        const isPdf = f.type === "application/pdf" || (f.name && f.name.toLowerCase().endsWith(".pdf"));
+        if (isPdf) return f; // Don't compress PDFs here
         
         const dataUrl = await new Promise<string>((resolve, reject) => {
           const reader = new FileReader();

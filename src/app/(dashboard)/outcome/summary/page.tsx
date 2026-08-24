@@ -51,30 +51,29 @@ export default function SummaryPage() {
   }, [supabase, startDate, endDate]);
 
   const isComplete = (t: TransactionWithDetails) => {
-    if (t.category === "shop_without_receipt") {
-      const hasAttachment = t.files?.some(f => f.file_type === "business_card" || f.file_type.startsWith("attachment_"));
-      const hasReceipt = t.files?.some(f => f.file_type === "receipt");
-      return hasAttachment && hasReceipt;
-    }
-    
-    if (t.category === "shop_with_receipt") {
-      const hasSlip = t.files?.some(f => f.file_type === "transfer_slip");
-      const hasReceipt = t.files?.some(f => f.file_type === "receipt");
-      const hasIdCard = t.files?.some(f => f.file_type === "id_card_copy");
-      
-      let complete = hasSlip && hasReceipt;
-      
-      if (t.description?.includes("[REQ_ID]")) {
-        complete = complete && hasIdCard;
-      }
-      return !!complete;
-    }
-    
+    const uploaded = new Set((t.files || []).map(f => f.file_type));
+    const fileNames = (t.files || []).map(f => f.file_name || "");
+    const hasSummary = uploaded.has("summary") || fileNames.some(n => n.includes("-sum"));
+
     if (t.category === "employee_labor") {
-      const hasSlip = t.files?.some(f => f.file_type === "transfer_slip");
-      const hasIdCard = t.files?.some(f => f.file_type === "id_card_copy");
-      const hasEmployeeReceipt = t.files?.some(f => f.file_type === "employee_receipt");
-      return !!(hasSlip && hasIdCard && hasEmployeeReceipt);
+      const hasSlip = uploaded.has("transfer_slip");
+      const hasIdCard = uploaded.has("id_card_copy");
+      const hasEmployeeReceipt = uploaded.has("employee_receipt");
+      return !!(hasSlip && hasIdCard && hasEmployeeReceipt && hasSummary);
+    }
+
+    if (t.category === "shop_with_receipt") {
+      const hasReceipt = uploaded.has("receipt");
+      const hasSlip = uploaded.has("transfer_slip");
+      const requiresId = t.description?.includes("[REQ_ID]");
+      const hasId = uploaded.has("id_card_copy");
+      if (requiresId && !hasId) return false;
+      return !!(hasReceipt && hasSummary);
+    }
+
+    if (t.category === "shop_without_receipt") {
+      const hasReceipt = uploaded.has("receipt");
+      return !!(hasReceipt && hasSummary);
     }
 
     const cat = t.category as keyof typeof REQUIRED_FILES;
@@ -83,12 +82,26 @@ export default function SummaryPage() {
   };
 
   const getMissingDocs = (t: TransactionWithDetails): string[] => {
-    if (t.category !== "employee_labor") return [];
     const uploaded = new Set((t.files || []).map(f => f.file_type));
+    const fileNames = (t.files || []).map(f => f.file_name || "");
+    const hasSummary = uploaded.has("summary") || fileNames.some(n => n.includes("-sum"));
     const missing: string[] = [];
-    if (!uploaded.has("transfer_slip")) missing.push("สลิปเงินโอน");
-    if (!uploaded.has("id_card_copy")) missing.push("สำเนาบัตรประชาชน");
-    if (!uploaded.has("employee_receipt")) missing.push("ใบสำคัญรับเงิน(เซ็นแล้ว)");
+
+    if (t.category === "employee_labor") {
+      if (!uploaded.has("transfer_slip")) missing.push("สลิปเงินโอน");
+      if (!uploaded.has("id_card_copy")) missing.push("สำเนาบัตรประชาชน");
+      if (!uploaded.has("employee_receipt")) missing.push("ใบสำคัญรับเงิน (เซ็นแล้ว)");
+      if (!hasSummary) missing.push("ไฟล์รวม PDF (-sum)");
+    } else if (t.category === "shop_with_receipt") {
+      if (!uploaded.has("transfer_slip")) missing.push("สลิปเงินโอน");
+      if (!uploaded.has("receipt")) missing.push("ใบเสร็จรับเงิน");
+      if (t.description?.includes("[REQ_ID]") && !uploaded.has("id_card_copy")) missing.push("สำเนาบัตรประชาชน");
+      if (!hasSummary) missing.push("ไฟล์รวม PDF (-sum)");
+    } else if (t.category === "shop_without_receipt") {
+      if (!uploaded.has("receipt")) missing.push("ใบรับรองแทนใบเสร็จ");
+      if (!hasSummary) missing.push("ไฟล์รวม PDF (-sum)");
+    }
+
     return missing;
   };
 

@@ -87,6 +87,30 @@ export default function DetailContent({ transaction }: DetailContentProps) {
           {renderFileBox("transfer_slip", "สลิปการโอนเงิน")}
           {renderFileBox("receipt", "ใบรับรองแทนใบเสร็จ")}
           {renderAttachments()}
+
+          {/* Show Merged PDF Summary file if present */}
+          {(() => {
+            const sumFile = transaction.files?.find((f) => f.file_type === "summary" || f.file_name?.includes("-sum"));
+            if (!sumFile) return null;
+            return (
+              <div className="border-2 rounded-xl p-4 border-blue-300 bg-blue-50/50 mb-4">
+                <div className="flex justify-between items-center mb-2">
+                  <p className="text-sm font-bold text-blue-800">
+                    📄 ไฟล์รวมเอกสารทั้งหมด (-sum.pdf)
+                  </p>
+                  <a
+                    href={sumFile.file_path}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs font-bold text-blue-600 hover:underline bg-white px-2.5 py-1 rounded-lg border border-blue-200 shadow-sm"
+                  >
+                    เปิดดูไฟล์ ↗
+                  </a>
+                </div>
+                <FileImage filePath={sumFile.file_path} label="ไฟล์รวมเอกสาร (-sum.pdf)" />
+              </div>
+            );
+          })()}
         </div>
       </div>
 

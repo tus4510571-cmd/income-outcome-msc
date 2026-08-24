@@ -13,22 +13,19 @@ interface TransactionListProps {
 export default function TransactionList({ transactions, baseHref, showFiles = false }: TransactionListProps) {
   const getRequiredCount = (t: TransactionWithDetails) => {
     if (t.category === "shop_without_receipt") {
-      const hasCard = t.files?.some(f => f.file_type === "business_card");
-      const hasReceipt = t.files?.some(f => f.file_type === "receipt");
       const hasSlip = t.files?.some(f => f.file_type === "transfer_slip");
-      
-      if (hasCard && hasReceipt && !hasSlip) return 2; // Cash payment
-      return 3; // Bank transfer
+      if (!hasSlip && !t.description?.includes("[TRANSFER]")) return 2; // receipt, summary
+      return 3; // transfer_slip, receipt, summary
     }
     
     if (t.category === "shop_with_receipt") {
-      let count = 2; // transfer_slip, receipt
+      let count = 3; // transfer_slip, receipt, summary
       if (t.description?.includes("[REQ_ID]")) count += 1;
       return count;
     }
     
-    if (t.category === "employee_labor") return 3; // transfer_slip, id_card_copy, employee_receipt
-    if (t.type === "income") return 1; // receipt
+    if (t.category === "employee_labor") return 4; // transfer_slip, id_card_copy, employee_receipt, summary
+    if (t.type === "income") return 1; // receipt / summary
     return 0;
   };
   if (!transactions || transactions.length === 0) {
@@ -68,18 +65,9 @@ export default function TransactionList({ transactions, baseHref, showFiles = fa
         };
 
         const getStatusElement = () => {
-          const reqCount = getRequiredCount(t);
-          const uploadedCount = t.files?.length || 0;
-          
-          if (uploadedCount >= reqCount && reqCount > 0) {
-            return <span className="text-emerald-600 font-medium">{t.description || "Completed"}</span>;
-          }
-
-          if (reqCount === 0) {
-             return <span className="text-emerald-600 font-medium">{t.description || "Completed"}</span>;
-          }
-
           const uploadedTypes = t.files?.map(f => f.file_type) || [];
+          const fileNames = t.files?.map(f => f.file_name || "") || [];
+          const hasSummary = uploadedTypes.includes("summary" as any) || fileNames.some(n => n.includes("-sum"));
           const missing: string[] = [];
 
           const checkMissing = (type: string, name: string) => {
@@ -87,21 +75,32 @@ export default function TransactionList({ transactions, baseHref, showFiles = fa
           };
 
           if (t.category === "shop_without_receipt") {
-            checkMissing("business_card", "นามบัตร");
             checkMissing("receipt", "ใบรับรองฯ");
-            if (reqCount === 3) checkMissing("transfer_slip", "สลิปโอนเงิน");
+            const hasSlip = uploadedTypes.includes("transfer_slip" as any);
+            if (hasSlip || t.description?.includes("[TRANSFER]")) {
+              checkMissing("transfer_slip", "สลิปโอนเงิน");
+            }
+            if (!hasSummary) missing.push("รวมไฟล์ (-sum)");
           } else if (t.category === "shop_with_receipt") {
             checkMissing("transfer_slip", "สลิปโอนเงิน");
             checkMissing("receipt", "ใบเสร็จ");
             if (t.description?.includes("[REQ_ID]")) {
               checkMissing("id_card_copy", "สำเนาบัตรฯ");
             }
+            if (!hasSummary) missing.push("รวมไฟล์ (-sum)");
           } else if (t.category === "employee_labor") {
             checkMissing("transfer_slip", "สลิปโอนเงิน");
             checkMissing("id_card_copy", "สำเนาบัตรฯ");
             checkMissing("employee_receipt", "ใบสำคัญรับเงิน");
+            if (!hasSummary) missing.push("รวมไฟล์ (-sum)");
           } else if (t.type === "income") {
-            checkMissing("receipt", "หลักฐาน");
+            if (uploadedTypes.length === 0) {
+              missing.push("หลักฐาน");
+            }
+          }
+
+          if (missing.length === 0) {
+            return <span className="text-emerald-600 font-medium">{t.description || "Completed"}</span>;
           }
 
           return (

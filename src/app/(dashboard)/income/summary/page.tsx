@@ -51,8 +51,10 @@ export default function SummaryPage() {
   }, [supabase, startDate, endDate]);
 
   const isComplete = (t: TransactionWithDetails) => {
-    const hasReceipt = t.files?.some(f => f.file_type === "receipt");
-    return !!hasReceipt;
+    const uploaded = new Set((t.files || []).map(f => f.file_type));
+    const fileNames = (t.files || []).map(f => f.file_name || "");
+    const hasSummary = uploaded.has("summary") || fileNames.some(n => n.includes("-sum"));
+    return (t.files?.length || 0) > 0 && (hasSummary || uploaded.has("receipt") || uploaded.has("transfer_slip"));
   };
 
   let filtered = transactions;

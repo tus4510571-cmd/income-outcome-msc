@@ -34,6 +34,9 @@ the actual codebase after being discovered describing a foreign app
 ## Recent changes log (from git history)
 
 ```
+[2026-08-24] fix(ai-scan): optimize /api/scan-receipt with direct flash candidate models and robust PDF MIME detection
+[2026-08-24] feat(completeness): universal summary (-sum.pdf) completeness check across all Income and Outcome categories
+[2026-08-24] feat(employee-labor): require -sum.pdf for complete status; add standalone re-merge button on detail page
 [2026-08-24] fix(pdf): add ignoreEncryption: true to PDFDocument.load in mergePdfBase64 to support encrypted/restricted PDFs
 [2026-08-24] feat(delete): add delete transaction progress modal with real-time Google Drive moveToDeleted feedback
 [2026-08-23] feat(employee-labor): detail-page late-upload confirm flow (select+preview -> Accept button -> per-step status -> auto -sum merge); incremental uploads supported

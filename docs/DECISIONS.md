@@ -315,4 +315,62 @@ in `mergePdfBase64` (`src/lib/pdfUtils.ts`).
 
 **Consequences:** Prevents runtime errors during `-sum` PDF merge when handling bank slips or PDFs with security metadata.
 
+---
+
+## [2026-08-24] Employee labor: summary (-sum.pdf) required for complete status & standalone re-merge button
+
+**Status:** Accepted
+
+**Context:** An employee-labor transaction was showing "Complete" as long as the 3
+core files (slip, ID card, receipt) were uploaded, even if the PDF merge step failed
+and `-sum.pdf` was missing from Google Drive/database.
+
+**Decision:**
+- `employee_labor` requires 4 files for complete status (`transfer_slip`, `id_card_copy`, `employee_receipt`, `summary`).
+- If the 3 core files exist but `summary` is missing, status is marked `Incomplete (ขาด: รวมไฟล์ (-sum))`.
+- On the detail page (`EmployeeFileSection.tsx`), when in this state, render a standalone action button:
+  `🔄 รวมไฟล์ PDF (-sum) ลง Google Drive` allowing the user to trigger the merge pipeline directly without re-uploading files.
+
+**Consequences:** Accurate transaction completeness tracking and self-healing for failed PDF merges.
+
+---
+
+## [2026-08-24] Universal summary (-sum.pdf) completeness check across all Income and Outcome categories
+
+**Status:** Accepted
+
+**Context:** The user requested extending the summary file (`-sum.pdf`) completeness
+check across all Income and Outcome categories so that incomplete transactions
+missing their merged summary document are reliably flagged.
+
+**Decision:**
+- Updated `TransactionList.tsx`, `outcome/summary/page.tsx`, `income/summary/page.tsx`,
+  and `src/lib/types.ts`.
+- In Outcome categories (`shop_with_receipt`, `shop_without_receipt`, `employee_labor`),
+  a transaction is marked complete only if all required individual evidence files
+  AND the merged `summary` (`-sum.pdf`) file are present.
+- In detail pages (`FileUploadSection.tsx`, `DetailContent.tsx`), the merged
+  `-sum.pdf` file is displayed prominently with a direct preview link.
+
+**Consequences:** Consistent, unified document completeness checking across the entire application without breaking existing workflows.
+
+---
+
+## [2026-08-24] Fix AI scan for PDF uploads and optimize model dispatch
+
+**Status:** Accepted
+
+**Context:** When uploading PDF files for AI scanning on receipt pages, the frontend
+compression logic was attempting to load PDFs into an Image object (which failed),
+and the API route was sequentially looping through dynamic model lists leading to long delays.
+
+**Decision:**
+- In `shop-without-receipt/new/page.tsx` and `shop-with-receipt/new/page.tsx`, check both `f.type === "application/pdf"` and `f.name.endsWith(".pdf")` to bypass image canvas compression for PDFs.
+- In `/api/scan-receipt/route.ts`, correctly infer MIME types when missing and directly query fast candidate models (`gemini-2.5-flash`, `gemini-2.0-flash`, `gemini-1.5-flash`, `gemini-1.5-flash-8b`) before falling back.
+
+**Consequences:** Instant, reliable AI scan response for both image and PDF bill uploads.
+
+
+
+
 

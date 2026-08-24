@@ -121,9 +121,9 @@ export const CURRENCY_OPTIONS = [
 ];
 
 export const REQUIRED_FILES: Record<OutcomeCategory, FileType[]> = {
-  shop_with_receipt: ["transfer_slip", "receipt"],
-  shop_without_receipt: ["transfer_slip", "receipt"],
-  employee_labor: ["transfer_slip", "id_card_copy", "employee_receipt"],
+  shop_with_receipt: ["transfer_slip", "receipt", "summary"],
+  shop_without_receipt: ["receipt", "summary"],
+  employee_labor: ["transfer_slip", "id_card_copy", "employee_receipt", "summary"],
 };
 
 export const REQUIRED_INCOME_FILES: Record<IncomeCategory, FileType[]> = {

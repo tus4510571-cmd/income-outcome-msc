@@ -28,10 +28,18 @@ export async function POST(req: NextRequest) {
     const imageParts = await Promise.all(
       files.map(async (f) => {
         const bytes = await f.arrayBuffer();
+        let mimeType = f.type;
+        if (!mimeType || mimeType === "application/octet-stream") {
+          const lower = (f.name || "").toLowerCase();
+          if (lower.endsWith(".pdf")) mimeType = "application/pdf";
+          else if (lower.endsWith(".png")) mimeType = "image/png";
+          else if (lower.endsWith(".webp")) mimeType = "image/webp";
+          else mimeType = "image/jpeg";
+        }
         return {
           inlineData: {
             data: Buffer.from(bytes).toString("base64"),
-            mimeType: f.type,
+            mimeType: mimeType,
           },
         };
       })
@@ -40,7 +48,7 @@ export async function POST(req: NextRequest) {
     // 4. Initialize Gemini SDK
     const ai = new GoogleGenAI({ apiKey: apiKey });
 
-    // 5. Create prompt and call Gemini 1.5 Flash
+    // 5. Create prompt
     const prompt = `
       คุณคือผู้เชี่ยวชาญด้านบัญชี นี่คือรูปภาพบิลหรือใบเสร็จรับเงิน
       จงดึงข้อมูลออกมาให้อยู่ในรูปแบบ JSON เท่านั้น โดยมีโครงสร้างดังนี้:
@@ -68,19 +76,19 @@ export async function POST(req: NextRequest) {
     `;
 
     try {
-      // 1. First fetch available models to guarantee we use a working one
-      const listRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
-      const listData = await listRes.json();
-      const flashModels = listData.models
-        ?.map((m: any) => m.name.replace('models/', ''))
-        .filter((name: string) => name.includes("flash")) || [];
-        
-      // 2. Loop through flash models and test them
+      // 1. Try fast preferred candidate models first
+      const preferredModels = [
+        "gemini-2.5-flash",
+        "gemini-2.0-flash",
+        "gemini-1.5-flash",
+        "gemini-1.5-flash-8b",
+      ];
+
       let workingModel = null;
       let lastApiError = null;
       let finalResultText = null;
 
-      for (const model of flashModels) {
+      for (const model of preferredModels) {
         try {
           const response = await ai.models.generateContent({
             model: model,
@@ -99,7 +107,7 @@ export async function POST(req: NextRequest) {
             }
           });
 
-          finalResultText = response.text;
+          finalResultText = response?.text;
           
           if (finalResultText) {
             workingModel = model;
@@ -107,7 +115,49 @@ export async function POST(req: NextRequest) {
           }
         } catch (apiError: any) {
           lastApiError = apiError;
-          // Continue to next model
+          console.warn(`Model ${model} failed, trying next model:`, apiError?.message || apiError);
+        }
+      }
+
+      // 2. Fallback: query available models if all direct candidates failed
+      if (!workingModel || !finalResultText) {
+        try {
+          const listRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
+          const listData = await listRes.json();
+          const availableFlashModels = listData.models
+            ?.map((m: any) => m.name.replace('models/', ''))
+            .filter((name: string) => name.includes("flash") && !preferredModels.includes(name)) || [];
+
+          for (const model of availableFlashModels.slice(0, 3)) {
+            try {
+              const response = await ai.models.generateContent({
+                model: model,
+                contents: [
+                  {
+                    role: 'user',
+                    parts: [
+                      { text: prompt },
+                      ...imageParts,
+                    ],
+                  }
+                ],
+                config: {
+                  responseMimeType: "application/json",
+                  temperature: 0.1,
+                }
+              });
+
+              finalResultText = response?.text;
+              if (finalResultText) {
+                workingModel = model;
+                break;
+              }
+            } catch (e: any) {
+              lastApiError = e;
+            }
+          }
+        } catch (fallbackErr) {
+          console.warn("Fallback model list error:", fallbackErr);
         }
       }
 
@@ -115,7 +165,14 @@ export async function POST(req: NextRequest) {
         throw lastApiError || new Error("All models failed or returned empty.");
       }
 
-      const extractedData = JSON.parse(finalResultText);
+      let cleanedText = finalResultText.trim();
+      if (cleanedText.startsWith("```json")) {
+        cleanedText = cleanedText.replace(/^```json\s*/, "").replace(/\s*```$/, "");
+      } else if (cleanedText.startsWith("```")) {
+        cleanedText = cleanedText.replace(/^```\s*/, "").replace(/\s*```$/, "");
+      }
+
+      const extractedData = JSON.parse(cleanedText);
       
       // Auto-balancing logic to ensure items sum exactly to totalAmount
       if (extractedData.items && Array.isArray(extractedData.items) && typeof extractedData.totalAmount === 'number') {

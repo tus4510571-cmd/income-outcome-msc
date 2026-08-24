@@ -40,9 +40,12 @@ The product owner reads Thai; error messages thrown to users are in Thai.
   `employee_receipt`) must ALWAYS use the Google-Drive pipeline
   (`lib/drive.ts` + `saveGoogleDriveFileLink`), including late uploads on
   the detail page — never the generic `FileUpload`(Storage). Storage is
-  reserved for that page's optional `attachment_N` extras. Completeness is
-  derived from `transaction_files` types — do not add a stored status
-  column without revisiting `DECISIONS.md` 2026-08-23.
+  reserved for that page's optional `attachment_N` extras. Detail-page core
+  uploads run through the staged confirm flow in `EmployeeFileSection`
+  (select → preview → "Accept and save to drive" button → task list); do
+  not reintroduce instant upload-on-pick. Completeness is derived from
+  `transaction_files` types — do not add a stored status column without
+  revisiting `DECISIONS.md` 2026-08-23.
 - Any new database column or table: add the ALTER/CREATE SQL as a new file
   in `/supabase/` AND apply it manually in the Supabase SQL Editor, AND add
   it to `DATA_MODEL.md` in the same change. See `DATA_MODEL.md` §7 for the

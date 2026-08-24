@@ -120,9 +120,13 @@ Required-file maps live in `types.ts` (`REQUIRED_FILES`,
 
 ## 10. Rules intentionally NOT enforced yet
 
-- Required-file validation is client-side only; employee_labor enforces
-  slip-at-creation with deferred completion, other categories still require
-  their full sets before submit.
+- Required-file validation is client-side only; employee_labor requires the
+  slip at creation and allows the remaining documents to be uploaded later
+  on the detail page — incrementally (ทยอย) is fine. Already-uploaded
+  documents are read-only (no replace). Selections are previewed first and
+  confirmed with one "Accept and save to drive" press showing per-step
+  status; the `-sum` merge runs automatically once all three types exist.
+  Other categories still require their full sets before submit.
 - No duplicate-transaction detection; no rate limiting anywhere.
 - No soft deletes / audit trail / edit history.
 - No pagination on any list view.

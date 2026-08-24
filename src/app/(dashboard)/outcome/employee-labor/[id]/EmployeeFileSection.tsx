@@ -36,8 +36,12 @@ type UploadTask = {
   id: string;
   name: string;
   status: "pending" | "uploading" | "success" | "error";
+  link?: string;
+  path?: string;
   error?: string;
 };
+
+type Selection = { file: File; preview: string | null };
 
 function extractDriveFileId(url: string): string | null {
   const match = url.match(/[-\w]{25,}/);
@@ -80,91 +84,145 @@ export default function EmployeeFileSection({
   description,
 }: EmployeeFileSectionProps) {
   const router = useRouter();
-  const [uploadingType, setUploadingType] = useState<string | null>(null);
+  const [selections, setSelections] = useState<Record<string, Selection>>({});
   const [tasks, setTasks] = useState<UploadTask[]>([]);
+  const [running, setRunning] = useState(false);
   const [error, setError] = useState("");
 
   const getUploaded = (fileType: string) =>
     existingFiles.some((f) => f.file_type === fileType);
 
   const isComplete = CORE_TYPES.every((t) => getUploaded(t.type));
-  const missingLabels = CORE_TYPES.filter((t) => !getUploaded(t.type)).map(
-    (t) => t.label
-  );
+  const missingTypes = CORE_TYPES.filter((t) => !getUploaded(t.type));
+  const missingLabels = missingTypes.map((t) => t.label);
+  const selectedTypes = missingTypes.filter((t) => selections[t.type]?.file);
+  const hasSelection = selectedTypes.length > 0;
+  const willComplete =
+    hasSelection && selectedTypes.length === missingTypes.length;
 
   const setTask = (id: string, updates: Partial<UploadTask>) =>
     setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, ...updates } : t)));
 
-  const handleCoreUpload = async (fileType: string, file: File) => {
-    if (uploadingType) return;
-    setUploadingType(fileType);
-    setError("");
-    const core = CORE_TYPES.find((t) => t.type === fileType)!;
-    setTasks([
-      { id: fileType, name: core.label, status: "uploading" },
-      { id: "merge", name: "รวมไฟล์ PDF (sum)", status: "pending" },
-    ]);
-
-    try {
-      const folderId = await getSetting("outcome_drive_folder_id");
-      if (!folderId)
-        throw new Error("ไม่พบ Folder ID สำหรับบันทึกไฟล์ (กรุณาตั้งค่าใน Settings)");
-
-      const reader = new FileReader();
-      const base64 = await new Promise<string>((resolve, reject) => {
+  const handleSelect = async (fileType: string, file: File | undefined) => {
+    if (!file || running) return;
+    let preview: string | null = null;
+    if (file.type.startsWith("image/")) {
+      preview = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
         reader.onload = () => resolve(reader.result as string);
         reader.onerror = reject;
         reader.readAsDataURL(file);
       });
+    }
+    setSelections((prev) => ({ ...prev, [fileType]: { file, preview } }));
+  };
 
-      const pdfBase64 = await convertImageToPdfBase64(
-        base64,
-        file.type || "image/jpeg"
-      );
-      const baseName = deriveBaseName(existingFiles, transactionDate, description);
-      const fileName = `${baseName}${core.suffix}`;
+  const clearSelection = (fileType: string) =>
+    setSelections((prev) => {
+      const next = { ...prev };
+      delete next[fileType];
+      return next;
+    });
 
-      const res = await uploadToGoogleDrive(
-        pdfBase64,
-        folderId,
-        fileName,
-        transactionDate,
-        SUB_FOLDER
-      );
-      if (!res.success) throw new Error(res.error || "อัปโหลดไปยัง Google Drive ไม่สำเร็จ");
+  const runPipeline = async () => {
+    if (running || !hasSelection) return;
+    setRunning(true);
+    setError("");
 
-      await saveGoogleDriveFileLink(transactionId, fileType, res.link!, fileName);
-      setTask(fileType, { status: "success" });
+    const initialTasks: UploadTask[] = selectedTypes.map((t) => ({
+      id: t.type,
+      name: t.label,
+      status: "pending",
+    }));
+    if (willComplete) {
+      initialTasks.push({ id: "merge", name: "รวมไฟล์ PDF (-sum)", status: "pending" });
+    }
+    setTasks(initialTasks);
 
-      const updatedFiles: TransactionFile[] = [
-        ...existingFiles.filter((f) => f.file_type !== fileType),
-        {
-          id: `tmp-${fileType}`,
+    const folderId = await getSetting("outcome_drive_folder_id");
+    if (!folderId) {
+      setError("ไม่พบ Folder ID สำหรับบันทึกไฟล์ (กรุณาตั้งค่าใน Settings)");
+      setRunning(false);
+      return;
+    }
+
+    const baseName = deriveBaseName(existingFiles, transactionDate, description);
+    const freshPdfs: Record<string, string> = {};
+    const uploadedRows: TransactionFile[] = [];
+
+    for (const t of missingTypes) {
+      setTask(t.type, { status: "uploading" });
+      try {
+        const selection = selections[t.type];
+        if (!selection) throw new Error("ไม่พบไฟล์ที่เลือก");
+        const reader = new FileReader();
+        const base64 = await new Promise<string>((resolve, reject) => {
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(selection.file);
+        });
+
+        const pdfBase64 = await convertImageToPdfBase64(
+          base64,
+          selection.file.type || "image/jpeg"
+        );
+        freshPdfs[t.type] = pdfBase64;
+
+        const fileName = `${baseName}${t.suffix}`;
+        const res = await uploadToGoogleDrive(
+          pdfBase64,
+          folderId,
+          fileName,
+          transactionDate,
+          SUB_FOLDER
+        );
+        if (!res.success)
+          throw new Error(res.error || "อัปโหลดไปยัง Google Drive ไม่สำเร็จ");
+
+        await saveGoogleDriveFileLink(transactionId, t.type, res.link!, fileName);
+        uploadedRows.push({
+          id: `tmp-${t.type}`,
           transaction_id: transactionId,
-          file_type: fileType,
+          file_type: t.type,
           file_path: res.link!,
           file_name: fileName,
           file_size: 0,
           uploaded_at: new Date().toISOString(),
-        },
-      ];
+        });
 
-      const nowComplete = CORE_TYPES.every((t) =>
-        updatedFiles.some((f) => f.file_type === t.type)
-      );
+        setTask(t.type, {
+          status: "success",
+          link: res.link,
+          path: `Outcome/${SUB_FOLDER}/${transactionDate.substring(0, 7)}/${fileName}.pdf`,
+        });
+      } catch (err) {
+        const msg = (err as Error).message || "อัปโหลดไม่สำเร็จ";
+        setTask(t.type, { status: "error", error: msg });
+        setError(msg);
+        setRunning(false);
+        return;
+      }
+    }
 
-      if (nowComplete) {
-        setTask("merge", { status: "uploading" });
+    if (willComplete) {
+      setTask("merge", { status: "uploading" });
+      try {
+        const updatedFiles: TransactionFile[] = [
+          ...existingFiles,
+          ...uploadedRows,
+        ];
+
         const pdfsToMerge: string[] = [];
         for (const t of CORE_TYPES) {
           const row = updatedFiles.find((f) => f.file_type === t.type);
-          const fileId = row ? extractDriveFileId(row.file_path) : null;
-          if (!fileId) throw new Error("ไม่พบ fileId ของไฟล์บน Google Drive");
+          if (!row) throw new Error(`ไม่พบไฟล์ ${t.label}`);
+          const fileId = extractDriveFileId(row.file_path);
+          if (!fileId) throw new Error(`ไม่พบ fileId ของ ${row.file_name}`);
           try {
             pdfsToMerge.push(await downloadFromGoogleDrive(fileId));
           } catch {
-            if (fileType === t.type) pdfsToMerge.push(pdfBase64);
-            else throw new Error(`ดึงไฟล์ ${row?.file_name} จาก Google Drive ไม่สำเร็จ`);
+            if (freshPdfs[t.type]) pdfsToMerge.push(freshPdfs[t.type]);
+            else throw new Error(`ดึงไฟล์ ${row.file_name} จาก Google Drive ไม่สำเร็จ`);
           }
         }
 
@@ -174,18 +232,18 @@ export default function EmployeeFileSection({
 
         if (oldSumRow && !oldSumRow.id.startsWith("tmp-")) {
           const oldSumFileId = extractDriveFileId(oldSumRow.file_path);
-          if (oldSumFileId) {
-            const oRes = await overwriteInGoogleDrive(
-              mergedPdf,
-              oldSumFileId,
-              folderId,
-              sumName,
-              transactionDate,
-              ""
-            );
-            if (oRes.success && oRes.link && oRes.link !== oldSumRow.file_path) {
-              await updateTransactionFilePath(oldSumRow.id, oRes.link);
-            }
+          if (!oldSumFileId) throw new Error("ไม่พบ fileId ของไฟล์ -sum เดิม");
+          const oRes = await overwriteInGoogleDrive(
+            mergedPdf,
+            oldSumFileId,
+            folderId,
+            sumName,
+            transactionDate,
+            ""
+          );
+          if (!oRes.success) throw new Error(oRes.error || "แทนที่ไฟล์ -sum ไม่สำเร็จ");
+          if (oRes.link && oRes.link !== oldSumRow.file_path) {
+            await updateTransactionFilePath(oldSumRow.id, oRes.link);
           }
         } else {
           const sRes = await uploadToGoogleDrive(
@@ -198,83 +256,106 @@ export default function EmployeeFileSection({
           if (!sRes.success) throw new Error(sRes.error || "บันทึกไฟล์รวมไม่สำเร็จ");
           await saveGoogleDriveFileLink(transactionId, "summary", sRes.link!, sumName);
         }
-        setTask("merge", { status: "success" });
-      } else {
-        setTasks((prev) => prev.filter((t) => t.id !== "merge"));
+        setTask("merge", {
+          status: "success",
+          path: `Outcome/${transactionDate.substring(0, 7)}/${sumName}.pdf`,
+        });
+      } catch (err) {
+        const msg = (err as Error).message || "รวมไฟล์ไม่สำเร็จ";
+        setTask("merge", { status: "error", error: msg });
+        setError(msg);
       }
-
-      router.refresh();
-    } catch (err) {
-      const msg = (err as Error).message || "เกิดข้อผิดพลาดในการอัปโหลด";
-      setError(msg);
-      setTasks((prev) =>
-        prev.map((t) =>
-          t.status === "uploading" || t.status === "pending"
-            ? { ...t, status: "error", error: msg }
-            : t
-        )
-      );
-    } finally {
-      setUploadingType(null);
+    } else {
+      setTasks((prev) => prev.filter((t) => t.id !== "merge"));
     }
+
+    setSelections({});
+    router.refresh();
+    setRunning(false);
   };
 
-  const renderUploader = (fileType: string, label: string) => (
-    <div className="border-2 border-dashed border-slate-300 rounded-xl p-4">
-      <p className="text-sm font-medium text-slate-700 mb-3">
-        {label}{" "}
-        <span className="text-xs text-slate-400">(อัปโหลดทีหลังได้ — PDF/รูปภาพ)</span>
-      </p>
-      <div className="flex gap-2 flex-wrap mb-2">
-        <button
-          type="button"
-          disabled={!!uploadingType}
-          onClick={() =>
-            document.getElementById(`camera-${transactionId}-${fileType}`)?.click()
-          }
-          className="bg-emerald-100 text-emerald-800 hover:bg-emerald-200 disabled:opacity-50 px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1 transition-colors"
-        >
-          📷 ถ่ายรูป
-        </button>
-        <button
-          type="button"
-          disabled={!!uploadingType}
-          onClick={() =>
-            document.getElementById(`file-${transactionId}-${fileType}`)?.click()
-          }
-          className="bg-indigo-100 text-indigo-700 hover:bg-indigo-200 disabled:opacity-50 px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1 transition-colors"
-        >
-          📁 เลือกไฟล์
-        </button>
+  const renderPicker = (ft: (typeof CORE_TYPES)[number]) => {
+    const sel = selections[ft.type];
+    return (
+      <div className="border-2 border-dashed border-slate-300 rounded-xl p-4 mb-4">
+        <p className="text-sm font-medium text-slate-700 mb-3">
+          {ft.label}{" "}
+          <span className="text-xs text-slate-400">
+            (ยังไม่มีไฟล์ — เลือกเพื่ออัปโหลดทีหลังได้)
+          </span>
+        </p>
+        <div className="flex gap-2 flex-wrap mb-2">
+          <button
+            type="button"
+            disabled={running}
+            onClick={() =>
+              document.getElementById(`camera-${transactionId}-${ft.type}`)?.click()
+            }
+            className="bg-emerald-100 text-emerald-800 hover:bg-emerald-200 disabled:opacity-50 px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1 transition-colors"
+          >
+            📷 ถ่ายรูป
+          </button>
+          <button
+            type="button"
+            disabled={running}
+            onClick={() =>
+              document.getElementById(`file-${transactionId}-${ft.type}`)?.click()
+            }
+            className="bg-indigo-100 text-indigo-700 hover:bg-indigo-200 disabled:opacity-50 px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1 transition-colors"
+          >
+            📁 เลือกไฟล์
+          </button>
+        </div>
+        <input
+          id={`camera-${transactionId}-${ft.type}`}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          className="hidden"
+          onChange={(e) => handleSelect(ft.type, e.target.files?.[0])}
+        />
+        <input
+          id={`file-${transactionId}-${ft.type}`}
+          type="file"
+          accept="application/pdf,image/jpeg,image/png,image/webp"
+          className="hidden"
+          onChange={(e) => handleSelect(ft.type, e.target.files?.[0])}
+        />
+
+        {sel ? (
+          <div className="flex items-center gap-3 p-3 bg-emerald-50 text-emerald-800 rounded-lg border border-emerald-200">
+            {sel.preview ? (
+              <img
+                src={sel.preview}
+                alt={sel.file.name}
+                className="w-12 h-12 object-cover rounded-md border border-emerald-300"
+              />
+            ) : (
+              <span className="text-xl">📄</span>
+            )}
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-bold truncate">✓ {sel.file.name}</p>
+              <p className="text-xs text-emerald-600">
+                พร้อมอัปโหลด — กด Accept and save to drive เพื่อยืนยัน
+              </p>
+            </div>
+            <button
+              type="button"
+              disabled={running}
+              onClick={() => clearSelection(ft.type)}
+              className="text-red-500 hover:text-red-700 font-bold text-sm px-2 disabled:opacity-50"
+            >
+              ลบ
+            </button>
+          </div>
+        ) : (
+          <div className="p-3 bg-slate-50 text-slate-400 rounded-lg text-xs text-center border border-dashed border-slate-200">
+            ยังไม่ได้เลือกไฟล์ (กดปุ่มถ่ายรูป หรือเลือกไฟล์ด้านบน)
+          </div>
+        )}
       </div>
-      <input
-        id={`camera-${transactionId}-${fileType}`}
-        type="file"
-        accept="image/*"
-        capture="environment"
-        className="hidden"
-        onChange={(e) => {
-          const f = e.target.files?.[0];
-          if (f) handleCoreUpload(fileType, f);
-          e.target.value = "";
-        }}
-      />
-      <input
-        id={`file-${transactionId}-${fileType}`}
-        type="file"
-        accept="application/pdf,image/jpeg,image/png,image/webp"
-        className="hidden"
-        onChange={(e) => {
-          const f = e.target.files?.[0];
-          if (f) handleCoreUpload(fileType, f);
-          e.target.value = "";
-        }}
-      />
-      <p className="text-xs text-slate-400 text-center border border-dashed border-slate-200 rounded-lg p-2 bg-slate-50">
-        ยังไม่มีไฟล์นี้ — แนบเพื่อทำให้เอกสารครบถ้วน
-      </p>
-    </div>
-  );
+    );
+  };
 
   return (
     <div className="space-y-4">
@@ -286,12 +367,11 @@ export default function EmployeeFileSection({
             <p className="text-sm font-bold text-amber-800">
               สถานะ: Incomplete — ยังขาด {missingLabels.length} เอกสาร
             </p>
-            <p className="text-sm text-amber-700 mt-1">
-              {missingLabels.join(" / ")}
-            </p>
+            <p className="text-sm text-amber-700 mt-1">{missingLabels.join(" / ")}</p>
             <p className="text-xs text-amber-600 mt-2">
-              อัปโหลดด้านล่างให้ครบ เมื่อครบทั้ง 3 เอกสาร ระบบจะรวมไฟล์เป็น PDF
-              (-sum) และบันทึกลง Google Drive ให้อัตโนมัติ
+              เลือกไฟล์ที่ยังขาด (ทยอยอัปโหลดทีละส่วนได้) แล้วกดปุ่ม Accept and save
+              to drive — เมื่อเอกสารครบ ระบบจะรวมไฟล์ PDF (-sum) ลง Google Drive
+              ให้อัตโนมัติ
             </p>
           </div>
         )}
@@ -317,11 +397,7 @@ export default function EmployeeFileSection({
                 </div>
               );
             }
-            return (
-              <div key={ft.type} className="mb-4">
-                {renderUploader(ft.type, ft.label)}
-              </div>
-            );
+            return <div key={ft.type}>{renderPicker(ft)}</div>;
           })}
         </div>
 
@@ -344,15 +420,58 @@ export default function EmployeeFileSection({
         </div>
       </div>
 
+      {!isComplete && (
+        <div className="card">
+          <button
+            type="button"
+            onClick={runPipeline}
+            disabled={running || !hasSelection}
+            className={`w-full py-4 rounded-xl text-white font-bold text-lg transition-all shadow-md flex items-center justify-center gap-2 ${
+              running || !hasSelection
+                ? "bg-slate-400 cursor-not-allowed"
+                : "bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 hover:shadow-lg hover:-translate-y-0.5"
+            }`}
+          >
+            {running ? (
+              <>
+                <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
+                กำลังบันทึกและอัปโหลด...
+              </>
+            ) : (
+              "Accept and save to drive"
+            )}
+          </button>
+          {!running && !hasSelection && (
+            <p className="text-xs text-center text-slate-500 mt-2">
+              เลือกไฟล์ที่ยังขาดอย่างน้อย 1 รายการ (ทยอยทำได้) — พอเอกสารครบ
+              ระบบจะ merge ให้อัตโนมัติ
+            </p>
+          )}
+        </div>
+      )}
+
       {tasks.length > 0 && (
         <div className="card">
           <h3 className="font-bold text-slate-800 mb-3">สถานะการอัปโหลด</h3>
           <div className="space-y-3">
             {tasks.map((task) => (
-              <div key={task.id} className="border border-slate-100 rounded-lg p-3 text-sm">
-                <div className="flex justify-between items-center">
-                  <span className="font-bold">{task.name}</span>
-                  <span>
+              <div
+                key={task.id}
+                className="border border-slate-100 rounded-lg p-3 text-sm"
+              >
+                <div className="flex justify-between items-start gap-2">
+                  <div className="min-w-0 flex-1">
+                    <span className="font-bold">{task.name}</span>
+                    {task.path && (
+                      <div className="text-xs text-slate-400 truncate mt-0.5">
+                        Path: {task.path}
+                      </div>
+                    )}
+                    {task.error && (
+                      <div className="text-xs text-red-500 mt-0.5">{task.error}</div>
+                    )}
+                  </div>
+                  <span className="flex-shrink-0">
                     {task.status === "uploading" && (
                       <span className="text-blue-500 font-bold animate-pulse">กำลังอัปโหลด...</span>
                     )}
@@ -364,7 +483,16 @@ export default function EmployeeFileSection({
                     )}
                   </span>
                 </div>
-                {task.error && <div className="text-xs text-red-500 mt-1">{task.error}</div>}
+                {task.status === "success" && task.link && (
+                  <a
+                    href={task.link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-block mt-1 text-blue-600 hover:underline text-xs font-bold"
+                  >
+                    ดูไฟล์ ↗
+                  </a>
+                )}
               </div>
             ))}
           </div>

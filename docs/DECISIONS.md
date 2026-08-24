@@ -219,6 +219,34 @@ created before this change keep working via the name-derivation fallback.
 
 ---
 
+## [2026-08-23] Employee-labor late-upload UX: staged selection + single confirm (replaces instant per-file upload)
+
+**Status:** Accepted
+
+**Context:** The first implementation uploaded each core document the
+moment it was picked on the detail page, so there was no confirmation step
+and no visible progress — unlike the creation page and shop-without-receipt,
+which show an "Accept and save to drive" button with a per-step status list.
+Owner asked for parity with that flow.
+
+**Decision:** Detail-page core uploads are now staged: pick files (camera or
+file input) → local preview with filename chip (removable) → one "Accept
+and save to drive" button runs the pipeline sequentially, rendering a task
+list (upload per document, then merge `-sum` when the set becomes complete).
+Uploads may be done incrementally across visits; already-uploaded documents
+are read-only. Pipeline reuses the same lib functions as creation; failure
+stops at the failed step and keeps selections for retry.
+
+**Alternatives considered:** Keep instant upload per file — rejected by
+owner (no confirmation/progress); force selecting ALL missing documents
+before save — superseded by owner's later instruction to keep incremental
+uploads allowed.
+
+**Consequences:** One extra click per batch; behavior otherwise unchanged
+(same Drive paths/naming, same derived completeness).
+
+---
+
 ## [2026-08-23] Scope discipline: no out-of-scope changes without asking; every push needs owner approval
 
 **Status:** Accepted

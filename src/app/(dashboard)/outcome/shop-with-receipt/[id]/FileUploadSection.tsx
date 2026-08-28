@@ -14,6 +14,8 @@ interface FileUploadSectionProps {
   transactionDate: string;
   existingFiles: TransactionFile[];
   description?: string | null;
+  shopName?: string | null;
+  receiptNumber?: string | null;
 }
 
 export default function FileUploadSection({
@@ -21,6 +23,8 @@ export default function FileUploadSection({
   transactionDate,
   existingFiles,
   description,
+  shopName,
+  receiptNumber,
 }: FileUploadSectionProps) {
   const router = useRouter();
   const [running, setRunning] = useState(false);
@@ -35,8 +39,26 @@ export default function FileUploadSection({
       const match2 = sample.file_name.match(/^(.*-OUT-[^-]*)/);
       if (match2) return match2[1];
     }
-    const formattedDate = dateStr.split("-").reverse().join("");
-    return `${formattedDate}-OUT-มีบิล`;
+    
+    // Construct base name from transaction date, pv sequence, and shop name
+    const [yyyyStr, mmStr, ddStr] = dateStr.split('-');
+    const yyyy = yyyyStr;
+    const mm = mmStr.padStart(2, '0');
+    const dd = ddStr.padStart(2, '0');
+    
+    let seq = "001";
+    if (receiptNumber) {
+      const matchSeq = receiptNumber.match(/\d+$/);
+      if (matchSeq) {
+        seq = matchSeq[0].slice(-3).padStart(3, '0');
+      }
+    }
+    
+    const rawSafeShopName = shopName ? shopName.replace(/[^a-zA-Z0-9ก-๙\s-]/g, "").trim().replace(/\s+/g, "_") : "";
+    const safeShopName = rawSafeShopName.length > 30 ? rawSafeShopName.substring(0, 30) : rawSafeShopName;
+    
+    const shopSuffix = safeShopName ? `-${safeShopName}` : "";
+    return `${dd}${mm}${yyyy}${seq}-OUT-มีบิล${shopSuffix}`;
   };
 
   const extractDriveFileId = (url: string) => {

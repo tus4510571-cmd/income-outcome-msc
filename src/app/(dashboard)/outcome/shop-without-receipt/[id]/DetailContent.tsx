@@ -28,8 +28,28 @@ export default function DetailContent({ transaction }: DetailContentProps) {
       const match2 = sample.file_name.match(/^(.*-OUT-[^-]*)/);
       if (match2) return match2[1];
     }
-    const formattedDate = dateStr.split("-").reverse().join("");
-    return `${formattedDate}-OUT-ไม่มีบิล`;
+    
+    // Construct base name from transaction date, pv sequence, and shop name
+    const [yyyyStr, mmStr, ddStr] = dateStr.split('-');
+    const yyyy = yyyyStr;
+    const mm = mmStr.padStart(2, '0');
+    const dd = ddStr.padStart(2, '0');
+    
+    let seq = "001";
+    const receiptNum = transaction.expense_detail?.receipt_number;
+    if (receiptNum) {
+      const matchSeq = receiptNum.match(/\d+$/);
+      if (matchSeq) {
+        seq = matchSeq[0].slice(-3).padStart(3, '0');
+      }
+    }
+    
+    const shopName = transaction.expense_detail?.shop_name;
+    const rawSafeShopName = shopName ? shopName.replace(/[^a-zA-Z0-9ก-๙\s-]/g, "").trim().replace(/\s+/g, "_") : "";
+    const safeShopName = rawSafeShopName.length > 30 ? rawSafeShopName.substring(0, 30) : rawSafeShopName;
+    
+    const shopSuffix = safeShopName ? `-${safeShopName}` : "";
+    return `${dd}${mm}${yyyy}${seq}-OUT-ไม่มีบิล${shopSuffix}`;
   };
 
   const extractDriveFileId = (url: string) => {

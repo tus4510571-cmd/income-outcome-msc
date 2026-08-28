@@ -445,8 +445,9 @@ the transaction. We need to decide the priority of this feature relative to rema
 - Added a check in all download loops to detect image MIME types (or file extensions). If a downloaded file is an image, it is automatically converted to a PDF base64 string using `convertImageToPdfBase64` before joining the list of PDFs to merge.
 - Added a fallback in the MIME type inspection logic: if the MIME type returned is generic (like `application/octet-stream`), the system inspects the file extension of the original file name and maps it to `image/png` or `image/jpeg` accordingly, bypassing PDF conversion failures for binary-mapped image streams.
 - Replaced the hardcoded lists of file types (which were missing scanned files like business cards/custom attachments) in the manual merge buttons for Shop with Receipt and Shop without Receipt detail pages. The buttons now fetch and merge **all** transaction files (except the summary file itself) and sort them to match the exact page order used during transaction creation.
+- Implemented a robust fallback in `deriveBaseName` for manual merge flows: if legacy database records do not contain a `-OUT-` prefix in their filenames, the app constructs the standard prefix (`[dd][mm][yyyy][seq]-OUT-[มีบิล/ไม่มีบิล]-[shopName]`) dynamically using the transaction's date, PV sequence suffix from its receipt/PV number, and sanitized shop name from the database.
 
-**Consequences:** Universal support for merging mixed PDF and raw image files stored in either Google Drive or Supabase Storage without exceptions, ensuring all attached documents are included.
+**Consequences:** Universal support for merging mixed PDF and raw image files stored in either Google Drive or Supabase Storage without exceptions, ensuring all attached documents are included and compiled into standardized, identifiable file names on Google Drive.
 
 
 

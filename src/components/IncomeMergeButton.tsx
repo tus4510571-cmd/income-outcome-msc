@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { getSetting, saveGoogleDriveFileLink } from "@/lib/actions";
-import { downloadFromGoogleDrive, uploadToGoogleDrive } from "@/lib/drive";
+import { downloadFromGoogleDrive, uploadToGoogleDrive, downloadFromDirectUrl } from "@/lib/drive";
 import { mergePdfBase64 } from "@/lib/pdfUtils";
 import { type TransactionFile } from "@/lib/types";
 
@@ -62,10 +62,16 @@ export default function IncomeMergeButton({
       const pdfsToMerge: string[] = [];
 
       for (const row of coreFiles) {
-        const fileId = extractDriveFileId(row.file_path);
-        if (!fileId) throw new Error(`ไม่พบ fileId ของ ${row.file_name}`);
         setStatus(`กำลังโหลดไฟล์ ${row.file_name}...`);
-        pdfsToMerge.push(await downloadFromGoogleDrive(fileId));
+        
+        const fileId = extractDriveFileId(row.file_path);
+        if (fileId) {
+          pdfsToMerge.push(await downloadFromGoogleDrive(fileId));
+        } else if (row.file_path.startsWith("http")) {
+          pdfsToMerge.push(await downloadFromDirectUrl(row.file_path));
+        } else {
+          throw new Error(`ไม่พบที่อยู่ของไฟล์ ${row.file_name}`);
+        }
       }
 
       setStatus("กำลังรวมไฟล์ PDF...");

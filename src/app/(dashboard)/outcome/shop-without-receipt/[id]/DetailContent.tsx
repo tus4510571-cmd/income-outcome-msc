@@ -7,7 +7,7 @@ import FileImage from "@/components/FileImage";
 import RefundTimeline from "@/components/RefundTimeline";
 import { type TransactionWithDetails, formatCurrency } from "@/lib/types";
 import { getSetting, saveGoogleDriveFileLink } from "@/lib/actions";
-import { downloadFromGoogleDrive, uploadToGoogleDrive } from "@/lib/drive";
+import { downloadFromGoogleDrive, uploadToGoogleDrive, downloadFromDirectUrl } from "@/lib/drive";
 import { mergePdfBase64 } from "@/lib/pdfUtils";
 
 interface DetailContentProps {
@@ -65,10 +65,16 @@ export default function DetailContent({ transaction }: DetailContentProps) {
       for (const fileType of coreTypesToDownload) {
         const row = filesList.find((f) => f.file_type === fileType);
         if (!row) throw new Error(`ไม่พบไฟล์ ${fileType === "receipt" ? "ใบรับรองฯ" : "สลิปโอนเงิน"}`);
-        const fileId = extractDriveFileId(row.file_path);
-        if (!fileId) throw new Error(`ไม่พบ fileId ของ ${row.file_name}`);
         setMergeStatus(`กำลังโหลดไฟล์ ${row.file_name}...`);
-        pdfsToMerge.push(await downloadFromGoogleDrive(fileId));
+        
+        const fileId = extractDriveFileId(row.file_path);
+        if (fileId) {
+          pdfsToMerge.push(await downloadFromGoogleDrive(fileId));
+        } else if (row.file_path.startsWith("http")) {
+          pdfsToMerge.push(await downloadFromDirectUrl(row.file_path));
+        } else {
+          throw new Error(`ไม่พบที่อยู่ของไฟล์ ${row.file_name}`);
+        }
       }
 
       setMergeStatus("กำลังรวมไฟล์ PDF...");

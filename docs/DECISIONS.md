@@ -415,6 +415,21 @@ the transaction. We need to decide the priority of this feature relative to rema
 
 **Consequences:** Universal support for late merging of files into summary PDFs across all income and outcome categories.
 
+---
+
+## [2026-08-28] Support direct URL downloads during PDF merging to handle Supabase legacy files
+
+**Status:** Accepted
+
+**Context:** During PDF merging, the app assumed all files are stored in Google Drive and have a `fileId`. However, legacy files (like `generated_receipt.jpg` on older transactions) are stored in Supabase Storage with direct URLs. Attempting to parse their Drive file ID returned null and threw an error.
+
+**Decision:**
+- Added a `downloadFromDirectUrl` helper in `drive.ts` that fetches the file from direct URLs, converts the array buffer to base64, and returns the data URI.
+- Updated all PDF merge download loops (`DetailContent.tsx`, `FileUploadSection.tsx`, `EmployeeFileSection.tsx`, and `IncomeMergeButton.tsx`) to check for a Drive file ID. If missing and the path is a direct URL, fall back to direct download instead of throwing.
+
+**Consequences:** Fixed merge failures for legacy files, allowing seamless PDF merging of mixed Drive and Supabase Storage files.
+
+
 
 
 

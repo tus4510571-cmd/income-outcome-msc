@@ -21,7 +21,7 @@ Full documentation index: `/docs/README.md`
 - **Universal Summary Check (2026-08-24):** Added universal summary (`-sum.pdf`) file completeness check across all Income and Outcome categories.
 - **AI Scan PDF Upload Fix (2026-08-24):** Optimized Gemini OCR endpoint and bypassed canvas compression for PDF files.
 - **Non-Mandatory Transfer Slip (2026-08-28):** Allowed saving shop-with-receipt without immediately forcing transfer slip upload, and bypassed auto-merge on incomplete creations.
-- **Late Summary Merge Buttons (2026-08-28):** Implemented manual `🔄 รวมไฟล์ PDF (-sum)` button on detail pages for shop-with-receipt, shop-without-receipt, and a shared `<IncomeMergeButton>` for income transactions with multiple files.
+- **Late Summary Merge Buttons (2026-08-28):** Implemented manual `🔄 รวมไฟล์ PDF (-sum)` button on detail pages for shop-with-receipt, shop-without-receipt, and a shared `<IncomeMergeButton>` for income transactions with multiple files. Supports fallback downloads from direct URLs (e.g. Supabase Storage) to fix merge failures on legacy files like `generated_receipt.jpg`.
 
 ## Deployment
 

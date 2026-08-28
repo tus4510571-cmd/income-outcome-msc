@@ -204,3 +204,19 @@ export async function downloadFromGoogleDrive(fileId: string) {
     throw error;
   }
 }
+
+export async function downloadFromDirectUrl(url: string) {
+  try {
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const arrayBuffer = await response.arrayBuffer();
+    const contentType = response.headers.get("content-type") || "image/jpeg";
+    const base64 = Buffer.from(arrayBuffer).toString("base64");
+    return `data:${contentType};base64,${base64}`;
+  } catch (error) {
+    console.error("Direct URL Download Error:", error);
+    throw error;
+  }
+}

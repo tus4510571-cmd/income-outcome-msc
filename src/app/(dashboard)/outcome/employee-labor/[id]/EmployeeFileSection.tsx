@@ -10,6 +10,7 @@ import {
   uploadToGoogleDrive,
   downloadFromGoogleDrive,
   overwriteInGoogleDrive,
+  downloadFromDirectUrl,
 } from "@/lib/drive";
 import {
   getSetting,
@@ -144,9 +145,15 @@ export default function EmployeeFileSection({
       for (const t of CORE_TYPES) {
         const row = existingFiles.find((f) => f.file_type === t.type);
         if (!row) throw new Error(`ไม่พบไฟล์ ${t.label}`);
+        
         const fileId = extractDriveFileId(row.file_path);
-        if (!fileId) throw new Error(`ไม่พบ fileId ของ ${row.file_name}`);
-        pdfsToMerge.push(await downloadFromGoogleDrive(fileId));
+        if (fileId) {
+          pdfsToMerge.push(await downloadFromGoogleDrive(fileId));
+        } else if (row.file_path.startsWith("http")) {
+          pdfsToMerge.push(await downloadFromDirectUrl(row.file_path));
+        } else {
+          throw new Error(`ไม่พบที่อยู่ของไฟล์ ${row.file_name}`);
+        }
       }
 
       const mergedPdf = await mergePdfBase64(pdfsToMerge);

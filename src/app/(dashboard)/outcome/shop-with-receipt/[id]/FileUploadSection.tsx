@@ -6,7 +6,7 @@ import FileUpload from "@/components/FileUpload";
 import FileImage from "@/components/FileImage";
 import { type TransactionFile } from "@/lib/types";
 import { getSetting, saveGoogleDriveFileLink } from "@/lib/actions";
-import { downloadFromGoogleDrive, uploadToGoogleDrive } from "@/lib/drive";
+import { downloadFromGoogleDrive, uploadToGoogleDrive, downloadFromDirectUrl } from "@/lib/drive";
 import { mergePdfBase64 } from "@/lib/pdfUtils";
 
 interface FileUploadSectionProps {
@@ -72,10 +72,16 @@ export default function FileUploadSection({
       for (const fileType of coreTypesToDownload) {
         const row = existingFiles.find((f) => f.file_type === fileType);
         if (!row) throw new Error(`ไม่พบไฟล์ ${fileType === "receipt" ? "ใบเสร็จ" : fileType === "transfer_slip" ? "สลิปโอนเงิน" : "สำเนาบัตร"}`);
-        const fileId = extractDriveFileId(row.file_path);
-        if (!fileId) throw new Error(`ไม่พบ fileId ของ ${row.file_name}`);
         setMergeStatus(`กำลังโหลดไฟล์ ${row.file_name}...`);
-        pdfsToMerge.push(await downloadFromGoogleDrive(fileId));
+        
+        const fileId = extractDriveFileId(row.file_path);
+        if (fileId) {
+          pdfsToMerge.push(await downloadFromGoogleDrive(fileId));
+        } else if (row.file_path.startsWith("http")) {
+          pdfsToMerge.push(await downloadFromDirectUrl(row.file_path));
+        } else {
+          throw new Error(`ไม่พบที่อยู่ของไฟล์ ${row.file_name}`);
+        }
       }
 
       setMergeStatus("กำลังรวมไฟล์ PDF...");

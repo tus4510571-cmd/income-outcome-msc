@@ -370,6 +370,23 @@ and the API route was sequentially looping through dynamic model lists leading t
 
 **Consequences:** Instant, reliable AI scan response for both image and PDF bill uploads.
 
+---
+
+## [2026-08-28] Postpone LINE Bot Integration until core web features are completed
+
+**Status:** Accepted
+
+**Context:** The owner requested a LINE integration allowing users to send receipt photos
+to a LINE Official Account (LINE OA) to automatically trigger Gemini AI OCR and save
+the transaction. We need to decide the priority of this feature relative to remaining web app requirements.
+
+**Decision:**
+- Postpone the LINE Messaging API integration until all core web application requirements and features are fully completed.
+- This ensures the database schema, business rules, and API endpoints are 100% stable, preventing double work and webhook breakages if details change.
+
+**Consequences:** Keeps current development focused on solidifying the core platform before building external channels.
+
+
 
 
 

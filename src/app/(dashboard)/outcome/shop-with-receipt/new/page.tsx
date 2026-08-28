@@ -185,7 +185,6 @@ export default function NewShopWithReceiptPage() {
       if (items.length === 0) missingFields.push("รายการสินค้า (ต้องมีอย่างน้อย 1 รายการ)");
       if (!shopName) missingFields.push("ชื่อร้านค้า");
       if (!amount) missingFields.push("ยอดเงินรวม");
-      if (!paidWithCash && !slipPreview) missingFields.push("รูปสลิปโอนเงิน (ถ้าไม่ได้จ่ายเงินสด)");
       if (receiptFiles.length === 0) missingFields.push("รูปใบเสร็จรับเงิน/ใบกำกับภาษี");
       if (requireIdCard && !idCardPreview) missingFields.push("รูปบัตรประชาชน (กรณีชื่อร้านเป็นบุคคลธรรมดา)");
       
@@ -196,6 +195,8 @@ export default function NewShopWithReceiptPage() {
     setUploadStatus("uploading");
     setUploadError("");
 
+    const isFilesComplete = (receiptFiles.length > 0) && (!!paidWithCash || !!slipPreview) && (!requireIdCard || !!idCardPreview);
+
     const initialTasks: UploadTask[] = [
       { id: "db", name: "สร้างรายการในฐานข้อมูล", status: "uploading" }
     ];
@@ -204,9 +205,10 @@ export default function NewShopWithReceiptPage() {
     if (slipPreview && !paidWithCash) initialTasks.push({ id: "slip", name: "อัปโหลดสลิปการโอนเงิน", status: "pending" });
     if (requireIdCard && idCardPreview) initialTasks.push({ id: "idCard", name: "อัปโหลดสำเนาบัตรประชาชนผู้ขาย", status: "pending" });
     
-    // Summary Merge Task
-    const willHaveMultiple = (receiptFiles.length > 0 ? 1 : 0) + (hasItemList && itemListFiles.length > 0 ? 1 : 0) + (slipPreview && !paidWithCash ? 1 : 0) + (requireIdCard && idCardPreview ? 1 : 0) > 0;
-    if (willHaveMultiple) initialTasks.push({ id: "merge", name: "รวมไฟล์ทั้งหมดเป็น PDF สรุป", status: "pending" });
+    // Summary Merge Task (only if all required files are present)
+    if (isFilesComplete) {
+      initialTasks.push({ id: "merge", name: "รวมไฟล์ทั้งหมดเป็น PDF สรุป", status: "pending" });
+    }
     
     setUploadTasks(initialTasks);
 
@@ -317,8 +319,8 @@ export default function NewShopWithReceiptPage() {
         }
       }
 
-      // Merge and Upload Summary PDF
-      if (base64PdfsToMerge.length > 0) {
+      // Merge and Upload Summary PDF (only if all required files are present)
+      if (isFilesComplete && base64PdfsToMerge.length > 0) {
         updateTask("merge", { status: "uploading" });
         try {
           const mergedPdfBase64 = await mergePdfBase64(base64PdfsToMerge);

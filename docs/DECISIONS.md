@@ -386,6 +386,22 @@ the transaction. We need to decide the priority of this feature relative to rema
 
 **Consequences:** Keeps current development focused on solidifying the core platform before building external channels.
 
+---
+
+## [2026-08-28] Make transfer slip non-mandatory during shop-with-receipt creation
+
+**Status:** Accepted
+
+**Context:** For "Shop with Receipt" transactions, users might not have the transfer slip immediately at hand during creation. Forcing it to be uploaded at creation hinders workflow.
+
+**Decision:**
+- Make `transfer_slip` non-mandatory during creation in `outcome/shop-with-receipt/new/page.tsx`.
+- If the required documents are not all present at creation, bypass the automatic PDF merge (`-sum.pdf`) step.
+- Display a manual **"รวมไฟล์ PDF (-sum)"** button on detail pages (`shop-with-receipt/[id]` and `shop-without-receipt/[id]`) only when all required core files are uploaded but the summary PDF is missing.
+
+**Consequences:** Enables flexible late uploading of slips while maintaining summary consistency when all documents are complete.
+
+
 
 
 

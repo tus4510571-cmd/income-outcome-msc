@@ -1,15 +1,102 @@
 "use client";
 
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import FileUpload from "@/components/FileUpload";
 import FileImage from "@/components/FileImage";
 import RefundTimeline from "@/components/RefundTimeline";
 import { type TransactionWithDetails, formatCurrency } from "@/lib/types";
+import { getSetting, saveGoogleDriveFileLink } from "@/lib/actions";
+import { downloadFromGoogleDrive, uploadToGoogleDrive } from "@/lib/drive";
+import { mergePdfBase64 } from "@/lib/pdfUtils";
 
 interface DetailContentProps {
   transaction: TransactionWithDetails;
 }
 
 export default function DetailContent({ transaction }: DetailContentProps) {
+  const router = useRouter();
+  const [running, setRunning] = useState(false);
+  const [error, setError] = useState("");
+  const [mergeStatus, setMergeStatus] = useState("");
+
+  const deriveBaseName = (files: any[], dateStr: string, desc: string | null | undefined) => {
+    const sample = files.find(f => f.file_name && f.file_name.includes("-OUT-"));
+    if (sample && sample.file_name) {
+      const match = sample.file_name.match(/^(.*-OUT-[^-]*-[^-]*)/);
+      if (match) return match[1];
+      const match2 = sample.file_name.match(/^(.*-OUT-[^-]*)/);
+      if (match2) return match2[1];
+    }
+    const formattedDate = dateStr.split("-").reverse().join("");
+    return `${formattedDate}-OUT-ไม่มีบิล`;
+  };
+
+  const extractDriveFileId = (url: string) => {
+    const match = url.match(/id=([^&]+)/);
+    return match ? match[1] : null;
+  };
+
+  const filesList = transaction.files || [];
+  const hasReceipt = filesList.some(f => f.file_type === "receipt");
+  const requiresSlip = filesList.some(f => f.file_type === "transfer_slip") || transaction.description?.includes("[TRANSFER]");
+  const hasSlip = !requiresSlip || filesList.some(f => f.file_type === "transfer_slip");
+
+  const allCoreUploaded = hasReceipt && hasSlip;
+  const hasSummary = filesList.some(f => f.file_type === "summary" || f.file_name?.includes("-sum"));
+  const isMissingSummaryOnly = allCoreUploaded && !hasSummary;
+
+  const runMergeOnly = async () => {
+    if (running) return;
+    setRunning(true);
+    setError("");
+    setMergeStatus("กำลังเตรียมเอกสาร...");
+
+    try {
+      const folderId = await getSetting("outcome_drive_folder_id");
+      if (!folderId) throw new Error("ไม่พบ Folder ID สำหรับบันทึกไฟล์ (กรุณาตั้งค่าใน Settings)");
+
+      const baseName = deriveBaseName(filesList, transaction.transaction_date, transaction.description);
+      const pdfsToMerge: string[] = [];
+
+      const coreTypesToDownload = ["receipt"];
+      if (requiresSlip) coreTypesToDownload.push("transfer_slip");
+
+      for (const fileType of coreTypesToDownload) {
+        const row = filesList.find((f) => f.file_type === fileType);
+        if (!row) throw new Error(`ไม่พบไฟล์ ${fileType === "receipt" ? "ใบรับรองฯ" : "สลิปโอนเงิน"}`);
+        const fileId = extractDriveFileId(row.file_path);
+        if (!fileId) throw new Error(`ไม่พบ fileId ของ ${row.file_name}`);
+        setMergeStatus(`กำลังโหลดไฟล์ ${row.file_name}...`);
+        pdfsToMerge.push(await downloadFromGoogleDrive(fileId));
+      }
+
+      setMergeStatus("กำลังรวมไฟล์ PDF...");
+      const mergedPdf = await mergePdfBase64(pdfsToMerge);
+      const sumName = `${baseName}-sum`;
+      
+      setMergeStatus("กำลังอัปโหลดไฟล์รวมขึ้น Google Drive...");
+      const sRes = await uploadToGoogleDrive(
+        mergedPdf,
+        folderId,
+        sumName,
+        transaction.transaction_date,
+        ""
+      );
+      if (!sRes.success) throw new Error(sRes.error || "บันทึกไฟล์รวมไม่สำเร็จ");
+      await saveGoogleDriveFileLink(transaction.id, "summary", sRes.link!, sumName);
+
+      setMergeStatus("สำเร็จแล้ว! ระบบกำลังรีโหลด...");
+      router.refresh();
+    } catch (err) {
+      const msg = (err as Error).message || "รวมไฟล์ไม่สำเร็จ";
+      setError(msg);
+    } finally {
+      setRunning(false);
+      setMergeStatus("");
+    }
+  };
+
   const renderFileBox = (fileType: string, label: string) => {
     const file = transaction.files?.find((f) => f.file_type === fileType);
     
@@ -87,6 +174,27 @@ export default function DetailContent({ transaction }: DetailContentProps) {
           {renderFileBox("transfer_slip", "สลิปการโอนเงิน")}
           {renderFileBox("receipt", "ใบรับรองแทนใบเสร็จ")}
           {renderAttachments()}
+
+          {/* Missing Summary - Show Merge Button */}
+          {isMissingSummaryOnly && (
+            <div className="border-2 border-dashed rounded-xl p-4 border-amber-300 bg-amber-50/50 mb-4 text-center">
+              <p className="text-sm font-semibold text-amber-800 mb-2">
+                ⚠️ ไฟล์เอกสารหลักครบถ้วนแล้ว แต่ยังไม่ได้สร้างไฟล์รวม PDF (-sum)
+              </p>
+              <button
+                type="button"
+                onClick={runMergeOnly}
+                disabled={running}
+                className="w-full py-2.5 px-4 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-sm font-bold shadow-sm transition disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                <span>{running ? "⏳" : "🔄"}</span>
+                <span>{running ? mergeStatus || "กำลังรวมไฟล์..." : "กดเพื่อรวมไฟล์ PDF (-sum) ลง Google Drive"}</span>
+              </button>
+              {error && (
+                <p className="mt-2 text-xs font-semibold text-red-600">❌ {error}</p>
+              )}
+            </div>
+          )}
 
           {/* Show Merged PDF Summary file if present */}
           {(() => {

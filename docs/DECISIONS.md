@@ -443,6 +443,7 @@ the transaction. We need to decide the priority of this feature relative to rema
 - Added a `downloadFileBase64` Server Action in `actions.ts`. It detects relative Supabase paths, generates a signed URL from the `transaction-files` bucket, and fetches the file content.
 - Updated all PDF merge download loops to use `downloadFileBase64` as fallback for relative paths.
 - Added a check in all download loops to detect image MIME types (or file extensions). If a downloaded file is an image, it is automatically converted to a PDF base64 string using `convertImageToPdfBase64` before joining the list of PDFs to merge.
+- Added a fallback in the MIME type inspection logic: if the MIME type returned is generic (like `application/octet-stream`), the system inspects the file extension of the original file name and maps it to `image/png` or `image/jpeg` accordingly, bypassing PDF conversion failures for binary-mapped image streams.
 
 **Consequences:** Universal support for merging mixed PDF and raw image files stored in either Google Drive or Supabase Storage without exceptions.
 

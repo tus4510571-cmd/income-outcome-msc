@@ -83,6 +83,15 @@ export default function DetailContent({ transaction }: DetailContentProps) {
           let mimeType = "image/jpeg";
           const mimeMatch = fileBase64.match(/^data:([^;]+);/);
           if (mimeMatch) mimeType = mimeMatch[1];
+          
+          if (mimeType === "application/octet-stream" || !["image/jpeg", "image/png"].includes(mimeType)) {
+            const ext = row.file_name.toLowerCase().split('.').pop();
+            if (ext === "png") {
+              mimeType = "image/png";
+            } else {
+              mimeType = "image/jpeg";
+            }
+          }
           fileBase64 = await convertImageToPdfBase64(fileBase64, mimeType);
         }
         

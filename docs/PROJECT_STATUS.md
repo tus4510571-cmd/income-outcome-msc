@@ -34,8 +34,8 @@ the actual codebase after being discovered describing a foreign app
 ## Recent changes log (from git history)
 
 ```
+[2026-08-28] fix(completeness): map generic 'application/octet-stream' content types to images during PDF merge by looking at file extension (resolving unsupported image type errors)
 [2026-08-28] fix(completeness): support Supabase storage relative paths & auto-convert raw images to PDF during document merging (resolving 'No PDF header found' and path errors)
-[2026-08-28] fix(completeness): add downloadFromDirectUrl fallback for legacy/Supabase storage files (fixing generated_receipt.jpg merge error)
 [2026-08-28] feat(completeness): make transfer slip upload non-mandatory in shop-with-receipt creation, skip auto-merge if incomplete, and add re-merge button to shop detail pages
 [2026-08-24] fix(ai-scan): optimize /api/scan-receipt with direct flash candidate models and robust PDF MIME detection
 [2026-08-24] feat(completeness): universal summary (-sum.pdf) completeness check across all Income and Outcome categories

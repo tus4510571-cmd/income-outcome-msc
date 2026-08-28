@@ -34,6 +34,7 @@ the actual codebase after being discovered describing a foreign app
 ## Recent changes log (from git history)
 
 ```
+[2026-08-28] feat(completeness): implement shared IncomeMergeButton for combining multiple income documents, and verify employee-labor late merge button
 [2026-08-28] feat(completeness): make transfer slip upload non-mandatory in shop-with-receipt creation, skip auto-merge if incomplete, and add re-merge button to shop detail pages
 [2026-08-24] fix(ai-scan): optimize /api/scan-receipt with direct flash candidate models and robust PDF MIME detection
 [2026-08-24] feat(completeness): universal summary (-sum.pdf) completeness check across all Income and Outcome categories

@@ -3,6 +3,7 @@
 import FileUpload from "@/components/FileUpload";
 import FileImage from "@/components/FileImage";
 import { type TransactionWithDetails, formatCurrency } from "@/lib/types";
+import IncomeMergeButton from "@/components/IncomeMergeButton";
 
 interface IncomeDetailContentProps {
   transaction: TransactionWithDetails;
@@ -110,6 +111,13 @@ export default function IncomeDetailContent({ transaction }: IncomeDetailContent
         <div className="grid grid-cols-1 gap-4">
           {renderFileBox("receipt", "ใบเสร็จที่ออกให้ลูกค้า")}
           {renderAttachments()}
+          
+          <IncomeMergeButton
+            transactionId={transaction.id}
+            transactionDate={transaction.transaction_date}
+            files={transaction.files || []}
+            description={transaction.description}
+          />
         </div>
       </div>
     </div>

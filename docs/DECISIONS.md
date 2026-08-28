@@ -401,6 +401,21 @@ the transaction. We need to decide the priority of this feature relative to rema
 
 **Consequences:** Enables flexible late uploading of slips while maintaining summary consistency when all documents are complete.
 
+---
+
+## [2026-08-28] Implement manual PDF summary merge button for employee labor and income categories
+
+**Status:** Accepted
+
+**Context:** To ensure all categories can manually compile documents, we need to make sure employee labor and income categories have similar merge functionality when multiple documents exist.
+
+**Decision:**
+- Employee labor already contains a manual merge button (`EmployeeFileSection.tsx`) when core files exist but the summary is missing.
+- For all Income categories (`payment_link`, `chat_direct`, `branch_transfer`), created a shared `<IncomeMergeButton>` component. It shows up on the detail page if there are 2 or more uploaded documents but no summary PDF (`-sum.pdf`) has been created yet.
+
+**Consequences:** Universal support for late merging of files into summary PDFs across all income and outcome categories.
+
+
 
 
 

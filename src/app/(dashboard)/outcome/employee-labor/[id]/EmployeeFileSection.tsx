@@ -16,6 +16,7 @@ import {
   getSetting,
   saveGoogleDriveFileLink,
   updateTransactionFilePath,
+  downloadFileBase64,
 } from "@/lib/actions";
 
 interface EmployeeFileSectionProps {
@@ -147,13 +148,25 @@ export default function EmployeeFileSection({
         if (!row) throw new Error(`ไม่พบไฟล์ ${t.label}`);
         
         const fileId = extractDriveFileId(row.file_path);
+        let fileBase64 = "";
         if (fileId) {
-          pdfsToMerge.push(await downloadFromGoogleDrive(fileId));
-        } else if (row.file_path.startsWith("http")) {
-          pdfsToMerge.push(await downloadFromDirectUrl(row.file_path));
+          fileBase64 = await downloadFromGoogleDrive(fileId);
+        } else if (row.file_path) {
+          fileBase64 = await downloadFileBase64(row.file_path);
         } else {
           throw new Error(`ไม่พบที่อยู่ของไฟล์ ${row.file_name}`);
         }
+
+        // Convert image files to PDF format before merging
+        const isPdf = fileBase64.startsWith("data:application/pdf") || row.file_name.toLowerCase().endsWith(".pdf");
+        if (!isPdf) {
+          let mimeType = "image/jpeg";
+          const mimeMatch = fileBase64.match(/^data:([^;]+);/);
+          if (mimeMatch) mimeType = mimeMatch[1];
+          fileBase64 = await convertImageToPdfBase64(fileBase64, mimeType);
+        }
+        
+        pdfsToMerge.push(fileBase64);
       }
 
       const mergedPdf = await mergePdfBase64(pdfsToMerge);

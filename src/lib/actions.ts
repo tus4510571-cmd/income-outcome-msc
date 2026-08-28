@@ -953,3 +953,28 @@ export async function updateTransactionFilePath(fileRowId: string, filePath: str
   if (error) throw new Error("ไม่สามารถอัปเดตตำแหน่งไฟล์ได้: " + error.message);
   return { success: true };
 }
+
+export async function downloadFileBase64(filePath: string) {
+  try {
+    let url = filePath;
+    if (!filePath.startsWith("http")) {
+      const supabase = await createClient();
+      const { data } = await supabase.storage
+        .from("transaction-files")
+        .createSignedUrl(filePath, 3600);
+      if (!data?.signedUrl) throw new Error("ไม่พบไฟล์ใน Supabase Storage");
+      url = data.signedUrl;
+    }
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const arrayBuffer = await response.arrayBuffer();
+    const contentType = response.headers.get("content-type") || "image/jpeg";
+    const base64 = Buffer.from(arrayBuffer).toString("base64");
+    return `data:${contentType};base64,${base64}`;
+  } catch (error) {
+    console.error("downloadFileBase64 Error:", error);
+    throw error;
+  }
+}

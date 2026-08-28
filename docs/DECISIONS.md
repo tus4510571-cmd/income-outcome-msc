@@ -429,6 +429,24 @@ the transaction. We need to decide the priority of this feature relative to rema
 
 **Consequences:** Fixed merge failures for legacy files, allowing seamless PDF merging of mixed Drive and Supabase Storage files.
 
+---
+
+## [2026-08-28] Support Supabase Storage paths & auto-convert image assets to PDF during merging
+
+**Status:** Accepted
+
+**Context:** 
+1. Legacy file records in `transaction_files` store relative Supabase Storage paths (like `generated_receipt.jpg` or `2026-08/generated_receipt.jpg`) rather than absolute `http` URLs.
+2. Older files could be raw images (like JPEG/PNG) rather than PDFs, causing `pdf-lib` to throw `No PDF header found` during merging.
+
+**Decision:**
+- Added a `downloadFileBase64` Server Action in `actions.ts`. It detects relative Supabase paths, generates a signed URL from the `transaction-files` bucket, and fetches the file content.
+- Updated all PDF merge download loops to use `downloadFileBase64` as fallback for relative paths.
+- Added a check in all download loops to detect image MIME types (or file extensions). If a downloaded file is an image, it is automatically converted to a PDF base64 string using `convertImageToPdfBase64` before joining the list of PDFs to merge.
+
+**Consequences:** Universal support for merging mixed PDF and raw image files stored in either Google Drive or Supabase Storage without exceptions.
+
+
 
 
 

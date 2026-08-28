@@ -6,9 +6,9 @@ import FileUpload from "@/components/FileUpload";
 import FileImage from "@/components/FileImage";
 import RefundTimeline from "@/components/RefundTimeline";
 import { type TransactionWithDetails, formatCurrency } from "@/lib/types";
-import { getSetting, saveGoogleDriveFileLink } from "@/lib/actions";
-import { downloadFromGoogleDrive, uploadToGoogleDrive, downloadFromDirectUrl } from "@/lib/drive";
-import { mergePdfBase64 } from "@/lib/pdfUtils";
+import { getSetting, saveGoogleDriveFileLink, downloadFileBase64 } from "@/lib/actions";
+import { downloadFromGoogleDrive, uploadToGoogleDrive } from "@/lib/drive";
+import { mergePdfBase64, convertImageToPdfBase64 } from "@/lib/pdfUtils";
 
 interface DetailContentProps {
   transaction: TransactionWithDetails;
@@ -68,13 +68,25 @@ export default function DetailContent({ transaction }: DetailContentProps) {
         setMergeStatus(`กำลังโหลดไฟล์ ${row.file_name}...`);
         
         const fileId = extractDriveFileId(row.file_path);
+        let fileBase64 = "";
         if (fileId) {
-          pdfsToMerge.push(await downloadFromGoogleDrive(fileId));
-        } else if (row.file_path.startsWith("http")) {
-          pdfsToMerge.push(await downloadFromDirectUrl(row.file_path));
+          fileBase64 = await downloadFromGoogleDrive(fileId);
+        } else if (row.file_path) {
+          fileBase64 = await downloadFileBase64(row.file_path);
         } else {
           throw new Error(`ไม่พบที่อยู่ของไฟล์ ${row.file_name}`);
         }
+
+        // Convert image files to PDF format before merging
+        const isPdf = fileBase64.startsWith("data:application/pdf") || row.file_name.toLowerCase().endsWith(".pdf");
+        if (!isPdf) {
+          let mimeType = "image/jpeg";
+          const mimeMatch = fileBase64.match(/^data:([^;]+);/);
+          if (mimeMatch) mimeType = mimeMatch[1];
+          fileBase64 = await convertImageToPdfBase64(fileBase64, mimeType);
+        }
+        
+        pdfsToMerge.push(fileBase64);
       }
 
       setMergeStatus("กำลังรวมไฟล์ PDF...");

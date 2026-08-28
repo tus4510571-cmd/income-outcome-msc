@@ -66,12 +66,21 @@ export default function FileUploadSection({
       const baseName = deriveBaseName(existingFiles, transactionDate, description);
       const pdfsToMerge: string[] = [];
 
-      const coreTypesToDownload = ["receipt", "transfer_slip"];
-      if (requiresId) coreTypesToDownload.push("id_card_copy");
+      const coreFiles = existingFiles.filter(
+        (f) => f.file_type !== "summary" && !f.file_name?.includes("-sum")
+      );
 
-      for (const fileType of coreTypesToDownload) {
-        const row = existingFiles.find((f) => f.file_type === fileType);
-        if (!row) throw new Error(`ไม่พบไฟล์ ${fileType === "receipt" ? "ใบเสร็จ" : fileType === "transfer_slip" ? "สลิปโอนเงิน" : "สำเนาบัตร"}`);
+      const getOrderWeight = (type: string) => {
+        if (type === "receipt") return 1;
+        if (type === "transfer_slip") return 2;
+        if (type === "id_card_copy") return 3;
+        if (type.startsWith("attachment")) return 4;
+        return 5;
+      };
+
+      coreFiles.sort((a, b) => getOrderWeight(a.file_type) - getOrderWeight(b.file_type));
+
+      for (const row of coreFiles) {
         setMergeStatus(`กำลังโหลดไฟล์ ${row.file_name}...`);
         
         const fileId = extractDriveFileId(row.file_path);

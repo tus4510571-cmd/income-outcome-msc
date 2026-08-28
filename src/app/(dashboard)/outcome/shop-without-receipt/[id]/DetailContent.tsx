@@ -59,12 +59,21 @@ export default function DetailContent({ transaction }: DetailContentProps) {
       const baseName = deriveBaseName(filesList, transaction.transaction_date, transaction.description);
       const pdfsToMerge: string[] = [];
 
-      const coreTypesToDownload = ["receipt"];
-      if (requiresSlip) coreTypesToDownload.push("transfer_slip");
+      const coreFiles = filesList.filter(
+        (f) => f.file_type !== "summary" && !f.file_name?.includes("-sum")
+      );
 
-      for (const fileType of coreTypesToDownload) {
-        const row = filesList.find((f) => f.file_type === fileType);
-        if (!row) throw new Error(`ไม่พบไฟล์ ${fileType === "receipt" ? "ใบรับรองฯ" : "สลิปโอนเงิน"}`);
+      const getOrderWeight = (type: string) => {
+        if (type.startsWith("attachment")) return 1;
+        if (type === "transfer_slip") return 2;
+        if (type === "cash_bill") return 3;
+        if (type === "receipt") return 4;
+        return 5;
+      };
+
+      coreFiles.sort((a, b) => getOrderWeight(a.file_type) - getOrderWeight(b.file_type));
+
+      for (const row of coreFiles) {
         setMergeStatus(`กำลังโหลดไฟล์ ${row.file_name}...`);
         
         const fileId = extractDriveFileId(row.file_path);

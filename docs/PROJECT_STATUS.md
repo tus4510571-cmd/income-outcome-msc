@@ -34,6 +34,7 @@ the actual codebase after being discovered describing a foreign app
 ## Recent changes log (from git history)
 
 ```
+[2026-09-03] feat(employee-labor): create incomplete transaction immediately upon saving employee receipt so it shows in transaction summary under missing docs
 [2026-09-03] feat(employee-labor): split employee receipt address into house no, moo (village no), street, subdistrict, district, province and align with voucher template slots
 [2026-09-02] feat(shop-with-receipt): make slip, ID card, and item list non-mandatory during creation, allowing save with only receipt to Drive and tracking missing docs in summary
 [2026-08-28] fix(completeness): support dynamic filename fallback (ddmmyyyyseq-OUT-shopName) in deriveBaseName to ensure legacy summary files have descriptive names

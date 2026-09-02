@@ -206,16 +206,29 @@ export default function CreateEmployeeLaborTransactionPage() {
         }
       }
 
-      // 1. Create Transaction in Supabase
-      const transaction = await createTransaction({
-        type: "outcome",
-        category: "employee_labor",
-        description: `ค่าจ้างบริการ: ${selectedReceipt.job_description} (${selectedReceipt.nickname})`,
-        amount: selectedReceipt.amount_before_tax,
-        currency: "THB",
-        transaction_date: date,
-        employee_name: selectedReceipt.employee_name,
-      });
+      // 1. Find or Create Transaction in Supabase
+      let targetTransactionId: string;
+      const { data: existingDetail } = await supabase
+        .from("expense_details")
+        .select("transaction_id")
+        .eq("receipt_number", selectedReceipt.id)
+        .maybeSingle();
+
+      if (existingDetail?.transaction_id) {
+        targetTransactionId = existingDetail.transaction_id;
+      } else {
+        const transaction = await createTransaction({
+          type: "outcome",
+          category: "employee_labor",
+          description: `ค่าจ้างบริการ: ${selectedReceipt.job_description} (${selectedReceipt.nickname})`,
+          amount: selectedReceipt.amount_before_tax,
+          currency: "THB",
+          transaction_date: date,
+          employee_name: selectedReceipt.employee_name,
+          receipt_number: selectedReceipt.id,
+        });
+        targetTransactionId = transaction.id;
+      }
 
       // 2. Save Drive Links
       for (const uf of uploadedFiles) {
@@ -226,7 +239,7 @@ export default function CreateEmployeeLaborTransactionPage() {
           "merge": "summary"
         };
         await saveGoogleDriveFileLink(
-          transaction.id,
+          targetTransactionId,
           fileTypeMap[uf.taskId] || "other",
           uf.link,
           uf.name

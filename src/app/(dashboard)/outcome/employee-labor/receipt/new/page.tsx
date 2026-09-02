@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { getSetting } from "@/lib/actions";
+import { getSetting, createTransaction } from "@/lib/actions";
 import EmployeeReceiptGenerator from "@/components/EmployeeReceiptGenerator";
 
 const jobTypes = [
@@ -138,7 +138,7 @@ export default function CreateEmployeeReceiptPage() {
         employeeProvince ? `จังหวัด ${employeeProvince}` : "",
       ].filter(Boolean).join(" ") || employeeAddress;
 
-      const { error: insertError } = await supabase
+      const { data: receiptData, error: insertError } = await supabase
         .from("employee_receipts")
         .insert({
           employee_name: employeeName,
@@ -153,15 +153,30 @@ export default function CreateEmployeeReceiptPage() {
           end_date: endDate,
           date_text: dateText,
           status: "PENDING"
-        });
+        })
+        .select()
+        .single();
 
       if (insertError) throw insertError;
+
+      // Create transaction in Supabase (status: incomplete)
+      await createTransaction({
+        type: "outcome",
+        category: "employee_labor",
+        description: `ค่าจ้างบริการ: ${jobDescription} (${nickname})`,
+        amount: amountBeforeTaxNum,
+        currency: "THB",
+        transaction_date: startDate,
+        employee_name: employeeName,
+        receipt_number: receiptData?.id || undefined,
+      });
 
       setSaved(true);
       
       // Print
       setTimeout(() => {
         window.print();
+        router.refresh();
         router.push("/outcome/employee-labor");
       }, 500);
 

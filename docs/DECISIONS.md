@@ -477,6 +477,19 @@ the transaction. We need to decide the priority of this feature relative to rema
 
 **Consequences:** Clear, structured address entry that perfectly aligns with the printed payment voucher template slots (including the separate "หมู่" line) without altering database schemas or breaking existing records.
 
+## 2026-09-03: Immediate incomplete transaction creation on employee receipt save
+
+**Status:** Accepted
+
+**Context:** Previously, creating an employee receipt in `outcome/employee-labor/receipt/new` only inserted into `employee_receipts`. It did not create a transaction in `transactions`, meaning the record was invisible in Transaction Summary (`/outcome/summary`) and `/outcome/employee-labor` until the user separately went to `outcome/employee-labor/new` and uploaded a slip.
+
+**Decision:**
+- When saving an employee receipt in `outcome/employee-labor/receipt/new`, immediately create an outcome transaction in `transactions` (with category `employee_labor`, referencing the receipt in `expense_details.receipt_number`).
+- Because it has no files uploaded yet, it naturally has `status: incomplete` and immediately shows up in Transaction Summary under "รายการขาดเอกสาร" (missing documents: slip, ID card, signed receipt, sum file).
+- In `outcome/employee-labor/new/page.tsx`, reuse any existing transaction found by `receipt_number` instead of creating duplicates.
+
+**Consequences:** Seamless expense tracking from the moment a payment voucher is issued; expenses waiting for payment slip or signature appear directly in missing document summaries.
+
 
 
 

@@ -34,6 +34,7 @@ the actual codebase after being discovered describing a foreign app
 ## Recent changes log (from git history)
 
 ```
+[2026-09-02] feat(shop-with-receipt): make slip, ID card, and item list non-mandatory during creation, allowing save with only receipt to Drive and tracking missing docs in summary
 [2026-08-28] fix(completeness): support dynamic filename fallback (ddmmyyyyseq-OUT-shopName) in deriveBaseName to ensure legacy summary files have descriptive names
 [2026-08-28] fix(completeness): merge all transaction files (including business cards/custom attachments) in manual PDF merge flow and sort them to match creation layout
 [2026-08-28] feat(completeness): make transfer slip upload non-mandatory in shop-with-receipt creation, skip auto-merge if incomplete, and add re-merge button to shop detail pages

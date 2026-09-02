@@ -449,6 +449,21 @@ the transaction. We need to decide the priority of this feature relative to rema
 
 **Consequences:** Universal support for merging mixed PDF and raw image files stored in either Google Drive or Supabase Storage without exceptions, ensuring all attached documents are included and compiled into standardized, identifiable file names on Google Drive.
 
+## 2026-09-02: Non-mandatory slip and ID card in shop-with-receipt creation
+
+**Status:** Accepted
+
+**Context:** Users creating a new transaction in "Shop with receipt" may not have the transfer slip or seller's ID card ready immediately at creation time. Previously, `canSubmit` blocked submitting if a transfer slip or ID card was not provided.
+
+**Decision:**
+- In `shop-with-receipt/new/page.tsx`, updated `canSubmit` and `handleFinalSubmit` so only the receipt/tax invoice, items, shop name, and amount are mandatory to submit.
+- Slip, seller ID card, and separate item list files are completely optional at creation.
+- If incomplete, the creation flow saves the transaction and uploads only the provided receipt(s) to Google Drive, skipping auto-merge of `-sum.pdf`.
+- If ID card is required, `[REQ_ID]` is flagged in the transaction description so the system and transaction summary track the missing ID card and show `incomplete` status.
+- Users can later visit the detail page (`/outcome/shop-with-receipt/[id]`), upload the missing documents, and trigger the manual merge to generate the final `-sum.pdf`.
+
+**Consequences:** Allows fast recording of expenses without being blocked by pending bank slips or seller ID cards, while maintaining document completeness tracking.
+
 
 
 

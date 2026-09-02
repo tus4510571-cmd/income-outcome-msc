@@ -186,7 +186,6 @@ export default function NewShopWithReceiptPage() {
       if (!shopName) missingFields.push("ชื่อร้านค้า");
       if (!amount) missingFields.push("ยอดเงินรวม");
       if (receiptFiles.length === 0) missingFields.push("รูปใบเสร็จรับเงิน/ใบกำกับภาษี");
-      if (requireIdCard && !idCardPreview) missingFields.push("รูปบัตรประชาชน (กรณีชื่อร้านเป็นบุคคลธรรมดา)");
       
       alert("ไม่สามารถบันทึกได้ กรุณากรอกข้อมูล/แนบไฟล์ต่อไปนี้ให้ครบถ้วน:\\n- " + missingFields.join("\\n- "));
       return;
@@ -379,7 +378,7 @@ export default function NewShopWithReceiptPage() {
     }
   };
 
-  const canSubmit = items.length > 0 && shopName && amount && (paidWithCash || slipPreview) && receiptFiles.length > 0 && (!requireIdCard || idCardPreview);
+  const canSubmit = items.length > 0 && !!shopName && !!amount && receiptFiles.length > 0;
 
   return (
     <main className="min-h-screen p-4 md:p-8 pb-24 bg-slate-50/50">
@@ -699,7 +698,8 @@ export default function NewShopWithReceiptPage() {
                 {!slipPreview ? (
                   <div>
                     <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-3 shadow-sm text-2xl">💸</div>
-                    <p className="text-slate-600 font-medium mb-3">อัปโหลดสลิปโอนเงิน (Slip)</p>
+                    <p className="text-slate-600 font-medium mb-1">อัปโหลดสลิปโอนเงิน (Slip)</p>
+                    <p className="text-xs text-slate-400 mb-3">(ไม่บังคับ - สามารถแนบตอนนี้หรืออัปโหลดเพิ่มเติมภายหลังได้)</p>
                     <div className="flex flex-wrap justify-center gap-2">
                       <button
                         type="button"
@@ -784,7 +784,8 @@ export default function NewShopWithReceiptPage() {
                 {!idCardPreview ? (
                   <div>
                     <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-3 shadow-sm text-2xl">🪪</div>
-                    <p className="text-slate-600 font-medium mb-3">อัปโหลดสำเนาบัตรประชาชนผู้ขาย</p>
+                    <p className="text-slate-600 font-medium mb-1">อัปโหลดสำเนาบัตรประชาชนผู้ขาย</p>
+                    <p className="text-xs text-slate-400 mb-3">(สามารถแนบตอนนี้หรืออัปโหลดเพิ่มเติมภายหลังได้)</p>
                     <div className="flex flex-wrap justify-center gap-2">
                       <button
                         type="button"

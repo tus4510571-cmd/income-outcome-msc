@@ -471,11 +471,11 @@ the transaction. We need to decide the priority of this feature relative to rema
 **Context:** The employee receipt form (`outcome/employee-labor/receipt/new`) previously had a single freeform textarea for the employee address. However, the printable payment voucher template (`EmployeeReceiptGenerator`) has distinct dedicated blank slots for house number (`อยู่บ้านเลขที่`), street (`ถนน`), sub-district (`แขวง/ตำบล`), district (`เขต/อำเภอ`), and province (`จังหวัด`).
 
 **Decision:**
-- In `outcome/employee-labor/receipt/new/page.tsx`, split the optional address into 5 separate fields: House No. (`บ้านเลขที่`), Street (`ถนน`), Sub-district (`ตำบลหรือแขวง`), District (`อำเภอหรือเขต`), and Province (`จังหวัด`).
+- In `outcome/employee-labor/receipt/new/page.tsx`, split the optional address into separate fields: House No. (`บ้านเลขที่`), Village No. (`หมู่`), Street (`ถนน`), Sub-district (`ตำบลหรือแขวง`), District (`อำเภอหรือเขต`), and Province (`จังหวัด`).
 - When saving to Supabase (`employee_receipts`), combine them into a formatted Thai address string for the existing `employee_address` column.
-- In `EmployeeReceiptGenerator.tsx`, accept each address component and render it precisely into its matching slot on the printable voucher.
+- In `EmployeeReceiptGenerator.tsx`, accept each address component (including `employeeMoo`) and render it precisely into its matching slot on the printable voucher.
 
-**Consequences:** Clear, structured address entry that perfectly aligns with the printed payment voucher template slots without altering database schemas or breaking existing records.
+**Consequences:** Clear, structured address entry that perfectly aligns with the printed payment voucher template slots (including the separate "หมู่" line) without altering database schemas or breaking existing records.
 
 
 

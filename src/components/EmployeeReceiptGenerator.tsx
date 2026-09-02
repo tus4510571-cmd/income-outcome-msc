@@ -8,6 +8,7 @@ interface EmployeeReceiptGeneratorProps {
   employeeName: string;
   employeeAddress?: string;
   employeeHouseNo?: string;
+  employeeMoo?: string;
   employeeStreet?: string;
   employeeSubdistrict?: string;
   employeeDistrict?: string;
@@ -28,6 +29,7 @@ export default function EmployeeReceiptGenerator({
   employeeName,
   employeeAddress = "",
   employeeHouseNo = "",
+  employeeMoo = "",
   employeeStreet = "",
   employeeSubdistrict = "",
   employeeDistrict = "",
@@ -80,7 +82,7 @@ export default function EmployeeReceiptGenerator({
           <span className="w-24 text-center">อยู่บ้านเลขที่</span>
           <span className="w-40 border-b border-black border-dashed px-2 pb-1 text-center">{employeeHouseNo || employeeAddress}</span>
           <span className="w-12 text-center">หมู่</span>
-          <span className="flex-1 border-b border-black border-dashed px-2 pb-1"></span>
+          <span className="flex-1 border-b border-black border-dashed px-2 pb-1 text-center">{employeeMoo}</span>
         </div>
 
         <div className="flex items-end">

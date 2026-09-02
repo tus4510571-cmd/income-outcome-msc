@@ -57,6 +57,7 @@ export default function CreateEmployeeReceiptPage() {
   const [nickname, setNickname] = useState("");
   const [employeeAddress, setEmployeeAddress] = useState("");
   const [employeeHouseNo, setEmployeeHouseNo] = useState("");
+  const [employeeMoo, setEmployeeMoo] = useState("");
   const [employeeStreet, setEmployeeStreet] = useState("");
   const [employeeSubdistrict, setEmployeeSubdistrict] = useState("");
   const [employeeDistrict, setEmployeeDistrict] = useState("");
@@ -130,6 +131,7 @@ export default function CreateEmployeeReceiptPage() {
       // Save to Supabase
       const fullAddress = [
         employeeHouseNo ? `บ้านเลขที่ ${employeeHouseNo}` : "",
+        employeeMoo ? (employeeMoo.startsWith("หมู่") ? employeeMoo : `หมู่ ${employeeMoo}`) : "",
         employeeStreet ? `ถนน ${employeeStreet}` : "",
         employeeSubdistrict ? `ตำบล/แขวง ${employeeSubdistrict}` : "",
         employeeDistrict ? `อำเภอ/เขต ${employeeDistrict}` : "",
@@ -242,9 +244,22 @@ export default function CreateEmployeeReceiptPage() {
                         className="input-field text-sm" 
                         value={employeeHouseNo} 
                         onChange={e => setEmployeeHouseNo(e.target.value)} 
-                        placeholder="เช่น 123/45"
+                        placeholder="เช่น 161 หรือ 123/45"
                       />
                     </div>
+                    <div>
+                      <label className="text-xs font-medium text-slate-600 mb-1 block">หมู่</label>
+                      <input 
+                        type="text" 
+                        className="input-field text-sm" 
+                        value={employeeMoo} 
+                        onChange={e => setEmployeeMoo(e.target.value)} 
+                        placeholder="เช่น 3"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="text-xs font-medium text-slate-600 mb-1 block">ถนน</label>
                       <input 
@@ -255,9 +270,6 @@ export default function CreateEmployeeReceiptPage() {
                         placeholder="เช่น สุขุมวิท"
                       />
                     </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="text-xs font-medium text-slate-600 mb-1 block">ตำบลหรือแขวง</label>
                       <input 
@@ -265,9 +277,12 @@ export default function CreateEmployeeReceiptPage() {
                         className="input-field text-sm" 
                         value={employeeSubdistrict} 
                         onChange={e => setEmployeeSubdistrict(e.target.value)} 
-                        placeholder="เช่น คลองเตย"
+                        placeholder="เช่น หนองคู"
                       />
                     </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="text-xs font-medium text-slate-600 mb-1 block">อำเภอหรือเขต</label>
                       <input 
@@ -275,20 +290,19 @@ export default function CreateEmployeeReceiptPage() {
                         className="input-field text-sm" 
                         value={employeeDistrict} 
                         onChange={e => setEmployeeDistrict(e.target.value)} 
-                        placeholder="เช่น คลองเตย"
+                        placeholder="เช่น เมืองยโสธร"
                       />
                     </div>
-                  </div>
-
-                  <div>
-                    <label className="text-xs font-medium text-slate-600 mb-1 block">จังหวัด</label>
-                    <input 
-                      type="text" 
-                      className="input-field text-sm" 
-                      value={employeeProvince} 
-                      onChange={e => setEmployeeProvince(e.target.value)} 
-                      placeholder="เช่น กรุงเทพมหานคร"
-                    />
+                    <div>
+                      <label className="text-xs font-medium text-slate-600 mb-1 block">จังหวัด</label>
+                      <input 
+                        type="text" 
+                        className="input-field text-sm" 
+                        value={employeeProvince} 
+                        onChange={e => setEmployeeProvince(e.target.value)} 
+                        placeholder="เช่น ยโสธร"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -456,6 +470,7 @@ export default function CreateEmployeeReceiptPage() {
                 employeeName={employeeName || "ชื่อพนักงาน"}
                 employeeAddress={employeeAddress}
                 employeeHouseNo={employeeHouseNo}
+                employeeMoo={employeeMoo}
                 employeeStreet={employeeStreet}
                 employeeSubdistrict={employeeSubdistrict}
                 employeeDistrict={employeeDistrict}
@@ -482,6 +497,7 @@ export default function CreateEmployeeReceiptPage() {
           employeeName={employeeName}
           employeeAddress={employeeAddress}
           employeeHouseNo={employeeHouseNo}
+          employeeMoo={employeeMoo}
           employeeStreet={employeeStreet}
           employeeSubdistrict={employeeSubdistrict}
           employeeDistrict={employeeDistrict}

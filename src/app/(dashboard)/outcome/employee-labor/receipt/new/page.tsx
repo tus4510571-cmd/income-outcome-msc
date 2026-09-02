@@ -56,6 +56,11 @@ export default function CreateEmployeeReceiptPage() {
   const [employeeName, setEmployeeName] = useState("");
   const [nickname, setNickname] = useState("");
   const [employeeAddress, setEmployeeAddress] = useState("");
+  const [employeeHouseNo, setEmployeeHouseNo] = useState("");
+  const [employeeStreet, setEmployeeStreet] = useState("");
+  const [employeeSubdistrict, setEmployeeSubdistrict] = useState("");
+  const [employeeDistrict, setEmployeeDistrict] = useState("");
+  const [employeeProvince, setEmployeeProvince] = useState("");
   const [employeeTaxId, setEmployeeTaxId] = useState("");
   
   const [jobType, setJobType] = useState("");
@@ -123,12 +128,20 @@ export default function CreateEmployeeReceiptPage() {
     setSaving(true);
     try {
       // Save to Supabase
+      const fullAddress = [
+        employeeHouseNo ? `บ้านเลขที่ ${employeeHouseNo}` : "",
+        employeeStreet ? `ถนน ${employeeStreet}` : "",
+        employeeSubdistrict ? `ตำบล/แขวง ${employeeSubdistrict}` : "",
+        employeeDistrict ? `อำเภอ/เขต ${employeeDistrict}` : "",
+        employeeProvince ? `จังหวัด ${employeeProvince}` : "",
+      ].filter(Boolean).join(" ") || employeeAddress;
+
       const { error: insertError } = await supabase
         .from("employee_receipts")
         .insert({
           employee_name: employeeName,
           nickname: nickname,
-          employee_address: employeeAddress,
+          employee_address: fullAddress,
           employee_tax_id: employeeTaxId,
           job_type: finalJobType,
           job_description: jobDescription,
@@ -215,14 +228,68 @@ export default function CreateEmployeeReceiptPage() {
                   />
                 </div>
 
-                <div>
-                  <label className="label">ที่อยู่ (ไม่บังคับ)</label>
-                  <textarea 
-                    className="input-field min-h-[60px]" 
-                    value={employeeAddress} 
-                    onChange={e => setEmployeeAddress(e.target.value)} 
-                    placeholder="ที่อยู่ตามบัตร ปชช."
-                  />
+                <div className="space-y-3 pt-2 border-t border-slate-100">
+                  <div className="flex items-center justify-between">
+                    <label className="label mb-0">ที่อยู่ (ไม่บังคับ)</label>
+                    <span className="text-xs text-slate-400">แยกตามช่องในใบสำคัญรับเงิน</span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs font-medium text-slate-600 mb-1 block">บ้านเลขที่</label>
+                      <input 
+                        type="text" 
+                        className="input-field text-sm" 
+                        value={employeeHouseNo} 
+                        onChange={e => setEmployeeHouseNo(e.target.value)} 
+                        placeholder="เช่น 123/45"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-slate-600 mb-1 block">ถนน</label>
+                      <input 
+                        type="text" 
+                        className="input-field text-sm" 
+                        value={employeeStreet} 
+                        onChange={e => setEmployeeStreet(e.target.value)} 
+                        placeholder="เช่น สุขุมวิท"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs font-medium text-slate-600 mb-1 block">ตำบลหรือแขวง</label>
+                      <input 
+                        type="text" 
+                        className="input-field text-sm" 
+                        value={employeeSubdistrict} 
+                        onChange={e => setEmployeeSubdistrict(e.target.value)} 
+                        placeholder="เช่น คลองเตย"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-slate-600 mb-1 block">อำเภอหรือเขต</label>
+                      <input 
+                        type="text" 
+                        className="input-field text-sm" 
+                        value={employeeDistrict} 
+                        onChange={e => setEmployeeDistrict(e.target.value)} 
+                        placeholder="เช่น คลองเตย"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-medium text-slate-600 mb-1 block">จังหวัด</label>
+                    <input 
+                      type="text" 
+                      className="input-field text-sm" 
+                      value={employeeProvince} 
+                      onChange={e => setEmployeeProvince(e.target.value)} 
+                      placeholder="เช่น กรุงเทพมหานคร"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
@@ -387,7 +454,12 @@ export default function CreateEmployeeReceiptPage() {
                 companyAddress={companyAddress}
                 companyTaxId={companyTaxId}
                 employeeName={employeeName || "ชื่อพนักงาน"}
-                employeeAddress={employeeAddress || "ที่อยู่พนักงาน"}
+                employeeAddress={employeeAddress}
+                employeeHouseNo={employeeHouseNo}
+                employeeStreet={employeeStreet}
+                employeeSubdistrict={employeeSubdistrict}
+                employeeDistrict={employeeDistrict}
+                employeeProvince={employeeProvince}
                 employeeTaxId={employeeTaxId || "เลขประจำตัวผู้เสียภาษี"}
                 dateString={dateText || "วันที่"}
                 jobDescription={jobDescription || "รายละเอียดการจ้างงาน"}
@@ -409,6 +481,11 @@ export default function CreateEmployeeReceiptPage() {
           companyTaxId={companyTaxId}
           employeeName={employeeName}
           employeeAddress={employeeAddress}
+          employeeHouseNo={employeeHouseNo}
+          employeeStreet={employeeStreet}
+          employeeSubdistrict={employeeSubdistrict}
+          employeeDistrict={employeeDistrict}
+          employeeProvince={employeeProvince}
           employeeTaxId={employeeTaxId}
           dateString={dateText}
           jobDescription={jobDescription}

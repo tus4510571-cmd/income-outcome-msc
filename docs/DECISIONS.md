@@ -464,6 +464,19 @@ the transaction. We need to decide the priority of this feature relative to rema
 
 **Consequences:** Allows fast recording of expenses without being blocked by pending bank slips or seller ID cards, while maintaining document completeness tracking.
 
+## 2026-09-03: Separate address fields in employee receipt creation
+
+**Status:** Accepted
+
+**Context:** The employee receipt form (`outcome/employee-labor/receipt/new`) previously had a single freeform textarea for the employee address. However, the printable payment voucher template (`EmployeeReceiptGenerator`) has distinct dedicated blank slots for house number (`อยู่บ้านเลขที่`), street (`ถนน`), sub-district (`แขวง/ตำบล`), district (`เขต/อำเภอ`), and province (`จังหวัด`).
+
+**Decision:**
+- In `outcome/employee-labor/receipt/new/page.tsx`, split the optional address into 5 separate fields: House No. (`บ้านเลขที่`), Street (`ถนน`), Sub-district (`ตำบลหรือแขวง`), District (`อำเภอหรือเขต`), and Province (`จังหวัด`).
+- When saving to Supabase (`employee_receipts`), combine them into a formatted Thai address string for the existing `employee_address` column.
+- In `EmployeeReceiptGenerator.tsx`, accept each address component and render it precisely into its matching slot on the printable voucher.
+
+**Consequences:** Clear, structured address entry that perfectly aligns with the printed payment voucher template slots without altering database schemas or breaking existing records.
+
 
 
 

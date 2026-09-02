@@ -6,7 +6,12 @@ interface EmployeeReceiptGeneratorProps {
   companyAddress: string;
   companyTaxId: string;
   employeeName: string;
-  employeeAddress: string;
+  employeeAddress?: string;
+  employeeHouseNo?: string;
+  employeeStreet?: string;
+  employeeSubdistrict?: string;
+  employeeDistrict?: string;
+  employeeProvince?: string;
   employeeTaxId: string;
   dateString: string;
   jobDescription: string;
@@ -21,7 +26,12 @@ export default function EmployeeReceiptGenerator({
   companyAddress,
   companyTaxId,
   employeeName,
-  employeeAddress,
+  employeeAddress = "",
+  employeeHouseNo = "",
+  employeeStreet = "",
+  employeeSubdistrict = "",
+  employeeDistrict = "",
+  employeeProvince = "",
   employeeTaxId,
   dateString,
   jobDescription,
@@ -68,23 +78,23 @@ export default function EmployeeReceiptGenerator({
           <span className="w-36">เลขประจำตัวผู้เสียภาษี</span>
           <span className="w-48 border-b border-black border-dashed px-2 pb-1 text-center">{employeeTaxId}</span>
           <span className="w-24 text-center">อยู่บ้านเลขที่</span>
-          <span className="w-40 border-b border-black border-dashed px-2 pb-1 text-center">{employeeAddress}</span>
+          <span className="w-40 border-b border-black border-dashed px-2 pb-1 text-center">{employeeHouseNo || employeeAddress}</span>
           <span className="w-12 text-center">หมู่</span>
           <span className="flex-1 border-b border-black border-dashed px-2 pb-1"></span>
         </div>
 
         <div className="flex items-end">
           <span className="w-16 pl-4">ถนน</span>
-          <span className="flex-1 border-b border-black border-dashed px-2 pb-1 text-center"></span>
+          <span className="flex-1 border-b border-black border-dashed px-2 pb-1 text-center">{employeeStreet}</span>
           <span className="w-24 text-center">แขวง/ตำบล</span>
-          <span className="w-40 border-b border-black border-dashed px-2 pb-1 text-center"></span>
+          <span className="w-40 border-b border-black border-dashed px-2 pb-1 text-center">{employeeSubdistrict}</span>
           <span className="w-24 text-center">เขต/อำเภอ</span>
-          <span className="flex-1 border-b border-black border-dashed px-2 pb-1"></span>
+          <span className="flex-1 border-b border-black border-dashed px-2 pb-1 text-center">{employeeDistrict}</span>
         </div>
 
         <div className="flex items-end">
           <span className="w-16 pl-2">จังหวัด</span>
-          <span className="flex-1 border-b border-black border-dashed px-2 pb-1 text-center"></span>
+          <span className="flex-1 border-b border-black border-dashed px-2 pb-1 text-center">{employeeProvince}</span>
           <span className="w-16 text-center">โทร</span>
           <span className="flex-1 border-b border-black border-dashed px-2 pb-1 text-center"></span>
         </div>
